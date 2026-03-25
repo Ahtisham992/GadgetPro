@@ -1,0 +1,453 @@
+import { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import useUserStore from '../store/userStore';
+import { Package, Clock, CheckCircle, Truck, Star, X, Upload } from 'lucide-react';
+
+const STATUS_CONFIG = {
+  delivered: { label: 'Delivered', color: 'var(--color-success)', bg: 'var(--color-success-bg)', icon: <CheckCircle size={13} /> },
+  shipped:   { label: 'In Transit', color: 'var(--color-info)', bg: '#EFF6FF', icon: <Truck size={13} /> },
+  processing:{ label: 'Processing', color: 'var(--color-warning)', bg: '#FFFBEB', icon: <Clock size={13} /> },
+};
+
+const getOrderStatus = (order) => {
+  if (order.isDelivered) return 'delivered';
+  if (order.isPaid) return 'shipped';
+  return 'processing';
+};
+
+/* ─── Review Modal ─── */
+const ReviewModal = ({ item, orderId, userInfo, onClose, onSuccess }) => {
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [reviewImage, setReviewImage] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const uploadFileHandler = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+    setUploading(true);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      setReviewImage(data.image);
+    } catch { /* ignore */ }
+    finally { setUploading(false); }
+  };
+
+  const submitHandler = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/products/${item.product}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo.token}` },
+        // Send orderId so backend scopes the duplicate check per-order
+        body: JSON.stringify({ rating, comment, image: reviewImage, orderId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to submit review');
+      onSuccess();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="fade-in" style={{ background: 'var(--color-surface)', borderRadius: '20px', padding: '2rem', width: '100%', maxWidth: '480px', boxShadow: 'var(--shadow-xl)', position: 'relative' }}>
+        {/* Close */}
+        <button onClick={onClose} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'var(--color-bg-alt)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
+          <X size={16} />
+        </button>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.5rem', paddingRight: '2rem' }}>
+          <img src={item.image} alt={item.name} style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '10px', background: 'var(--color-bg-alt)', padding: '4px', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.9375rem', lineHeight: 1.3 }}>{item.name}</div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>Write your review</div>
+          </div>
+        </div>
+
+        {error && <div className="alert alert-danger" style={{ marginBottom: '1.25rem', fontSize: '0.875rem' }}>{error}</div>}
+
+        <form onSubmit={submitHandler}>
+          {/* Star Rating */}
+          <div className="form-group">
+            <label className="form-label">Rating *</label>
+            <div style={{ display: 'flex', gap: '0.25rem' }}>
+              {[1, 2, 3, 4, 5].map(star => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', transition: 'transform 0.1s' }}
+                >
+                  <Star
+                    size={30}
+                    fill={(hoverRating || rating) >= star ? '#FBBF24' : 'none'}
+                    color={(hoverRating || rating) >= star ? '#FBBF24' : '#D1D5DB'}
+                    style={{ transition: 'all 0.1s' }}
+                  />
+                </button>
+              ))}
+              {rating > 0 && (
+                <span style={{ alignSelf: 'center', marginLeft: '0.5rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                  {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Comment */}
+          <div className="form-group">
+            <label className="form-label">Your Review *</label>
+            <textarea
+              className="form-control"
+              rows={4}
+              placeholder="Share your experience with this product..."
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Photo Upload */}
+          <div className="form-group">
+            <label className="form-label">Attach Photo <span style={{ color: 'var(--color-text-light)', fontWeight: 400 }}>(optional)</span></label>
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: '0.625rem',
+              cursor: 'pointer', border: '1.5px dashed var(--color-border)',
+              borderRadius: 'var(--radius-lg)', padding: '0.75rem 1rem',
+              color: 'var(--color-text-muted)', fontSize: '0.875rem',
+              transition: 'border-color 0.15s, background 0.15s',
+              background: reviewImage ? 'var(--color-success-bg)' : 'transparent',
+              borderColor: reviewImage ? 'var(--color-success)' : 'var(--color-border)',
+            }}
+              onMouseEnter={e => !reviewImage && (e.currentTarget.style.borderColor = 'var(--color-primary)')}
+              onMouseLeave={e => !reviewImage && (e.currentTarget.style.borderColor = 'var(--color-border)')}
+            >
+              <Upload size={15} />
+              {uploading ? 'Uploading...' : reviewImage ? '✓ Photo attached' : 'Click to attach a photo'}
+              <input type="file" accept="image/*" onChange={uploadFileHandler} style={{ display: 'none' }} />
+            </label>
+            {reviewImage && (
+              <div style={{ marginTop: '0.75rem', position: 'relative', display: 'inline-block' }}>
+                <img src={reviewImage} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--color-border)' }} />
+                <button type="button" onClick={() => setReviewImage('')}
+                  style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--color-danger)', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', color: '#fff', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <button type="button" className="btn btn-outline btn-block" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary btn-block" disabled={rating === 0 || !comment.trim() || submitting || uploading}>
+              {submitting ? 'Submitting...' : 'Submit Review'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* ─── Order Card ─── */
+const OrderCard = ({ order, userInfo, onRefresh }) => {
+  const status = getOrderStatus(order);
+  const { color, bg, label, icon } = STATUS_CONFIG[status];
+  const [reviewTarget, setReviewTarget] = useState(null);
+  // Track reviewed items as 'orderId:productId' composite keys
+  const [reviewedKeys, setReviewedKeys] = useState(new Set());
+  const [checkingReviews, setCheckingReviews] = useState(false);
+
+  // Auto-load review status when order is delivered
+  useEffect(() => {
+    if (!order.isDelivered || !userInfo) return;
+    const checkReviewed = async () => {
+      setCheckingReviews(true);
+      const keys = new Set();
+      await Promise.all(
+        (order.orderItems || []).map(async (item) => {
+          try {
+            const res = await fetch(`/api/products/${item.product}`);
+            const data = await res.json();
+            const alreadyReviewed = data.reviews?.some(
+              (r) => (r.user === userInfo._id || r.user === userInfo._id?.toString())
+                     && r.orderId === order._id
+            );
+            if (alreadyReviewed) keys.add(`${order._id}:${item.product}`);
+          } catch { /* ignore */ }
+        })
+      );
+      setReviewedKeys(keys);
+      setCheckingReviews(false);
+    };
+    checkReviewed();
+  }, [order, userInfo]);
+
+  const totalItems = order.orderItems?.length || 0;
+  const allReviewed = totalItems > 0 && reviewedKeys.size >= totalItems;
+
+  const handleReviewSuccess = (productId) => {
+    setReviewTarget(null);
+    setReviewedKeys(prev => new Set([...prev, `${order._id}:${productId}`]));
+    if (onRefresh) onRefresh();
+  };
+
+  const handleRequestReturn = async (orderId, reason) => {
+    try {
+      const res = await fetch('/api/returns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo.token}` },
+        body: JSON.stringify({ orderId, reason })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to submit return request');
+      alert('Return request submitted successfully. Our team will review it shortly.');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  return (
+    <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+      {/* Header */}
+      <div style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.2rem' }}>Order ID</div>
+          <div style={{ fontWeight: 700, fontSize: '0.9375rem', letterSpacing: '-0.01em' }}>#{order._id.slice(-8).toUpperCase()}</div>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>{order.createdAt?.substring(0, 10)}</div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, background: bg, color }}>
+            {icon} {label}
+          </span>
+          <div style={{ fontWeight: 800, fontSize: '1.0625rem', color: 'var(--color-primary)' }}>
+            PKR {order.totalPrice?.toLocaleString()}
+          </div>
+        </div>
+      </div>
+
+      {/* Items preview */}
+      <div style={{ padding: '0 1.25rem 1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {order.orderItems?.map((item, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', background: 'var(--color-bg-alt)', borderRadius: '8px', padding: '0.3rem 0.625rem' }}>
+            <img src={item.image} alt={item.name} style={{ width: '24px', height: '24px', objectFit: 'contain', borderRadius: '4px' }} />
+            <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '0.875rem 1.25rem', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg-alt)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+          {order.isPaid || order.paymentMethod === 'Credit Card'
+            ? <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>✓ Paid</span>
+            : <span style={{ color: 'var(--color-warning)' }}>⏳ Payment Pending</span>
+          }
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {/* Request Return Button */}
+          {order.isDelivered && (
+            <button
+              className="btn btn-outline"
+              style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem', borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
+              onClick={() => {
+                const reason = window.prompt('Please enter a reason for returning this order:');
+                if (reason && reason.trim()) {
+                  handleRequestReturn(order._id, reason.trim());
+                }
+              }}
+            >
+              Request Return
+            </button>
+          )}
+
+          {/* Reviewed badge */}
+          {order.isDelivered && allReviewed && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, background: 'var(--color-success-bg)', color: 'var(--color-success)' }}>
+              <CheckCircle size={13} /> All Reviewed
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Per-item review section — always visible for delivered orders */}
+      {order.isDelivered && (
+        <div className="fade-in" style={{ padding: '1.25rem', borderTop: '1px solid var(--color-border)' }}>
+          {checkingReviews ? (
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '0.5rem' }}>Checking review status...</div>
+          ) : (
+            <>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '0.875rem' }}>
+                {allReviewed ? '✓ You have reviewed all items in this order.' : 'Rate your purchased items:'}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                {order.orderItems?.map((item, i) => {
+                  const reviewKey = `${order._id}:${item.product}`;
+                  const alreadyReviewed = reviewedKeys.has(reviewKey);
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--color-bg-alt)', borderRadius: '12px', border: `1px solid ${alreadyReviewed ? 'var(--color-success)' : 'var(--color-border)'}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flex: 1, minWidth: 0 }}>
+                        <img src={item.image} alt={item.name} style={{ width: '36px', height: '36px', objectFit: 'contain', borderRadius: '8px', background: 'var(--color-surface)', padding: '3px', flexShrink: 0 }} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Qty: {item.qty}</div>
+                        </div>
+                      </div>
+
+                      {alreadyReviewed ? (
+                        <span style={{ flexShrink: 0, marginLeft: '1rem', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <CheckCircle size={14} /> Reviewed
+                        </span>
+                      ) : (
+                        <button
+                          className="btn btn-sm btn-primary"
+                          style={{ flexShrink: 0, marginLeft: '1rem', fontSize: '0.8125rem' }}
+                          onClick={() => setReviewTarget(item)}
+                        >
+                          <Star size={12} /> Write Review
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {reviewTarget && (
+        <ReviewModal
+          item={reviewTarget}
+          orderId={order._id}
+          userInfo={userInfo}
+          onClose={() => setReviewTarget(null)}
+          onSuccess={() => handleReviewSuccess(reviewTarget.product)}
+        />
+      )}
+    </div>
+  );
+};
+
+/* ─── Profile Page ─── */
+const Profile = () => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { userInfo } = useUserStore();
+  const navigate = useNavigate();
+
+  const fetchMyOrders = useCallback(async () => {
+    if (!userInfo) return;
+    try {
+      const res = await fetch('/api/orders/mine', { headers: { Authorization: `Bearer ${userInfo.token}` } });
+      const data = await res.json();
+      setOrders(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [userInfo]);
+
+  useEffect(() => {
+    if (!userInfo) { navigate('/login'); return; }
+    fetchMyOrders();
+  }, [userInfo, navigate, fetchMyOrders]);
+
+  const activeOrders = orders.filter(o => !o.isDelivered);
+  const pastOrders = orders.filter(o => o.isDelivered);
+
+  return (
+    <div className="container fade-in" style={{ padding: '2.5rem 1.5rem' }}>
+      <h2 style={{ marginBottom: '2rem' }}>My Account</h2>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '2rem', alignItems: 'start' }}>
+        {/* Sidebar */}
+        <div>
+          <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: '1.75rem', boxShadow: 'var(--shadow-card)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)' }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.875rem' }}>
+                {userInfo?.name?.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ fontWeight: 700, fontSize: '1.0625rem', marginBottom: '0.25rem' }}>{userInfo?.name}</div>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>{userInfo?.email}</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {[
+                { icon: <Package size={16} />, label: 'All Orders', count: orders.length },
+                { icon: <Clock size={16} />, label: 'In Progress', count: activeOrders.length },
+                { icon: <CheckCircle size={16} />, label: 'Delivered', count: pastOrders.length },
+              ].map(item => (
+                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem 0.875rem', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-alt)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{item.icon} {item.label}</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-primary)' }}>{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Orders */}
+        <div>
+          {loading ? (
+            <div className="loader" />
+          ) : orders.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border)' }}>
+              <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>📦</div>
+              <h3 style={{ marginBottom: '0.75rem' }}>No orders yet</h3>
+              <p style={{ marginBottom: '1.5rem' }}>Start shopping and your orders will appear here.</p>
+              <Link to="/"><button className="btn btn-primary">Browse Products</button></Link>
+            </div>
+          ) : (
+            <>
+              {activeOrders.length > 0 && (
+                <div style={{ marginBottom: '2rem' }}>
+                  <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Clock size={18} style={{ color: 'var(--color-warning)' }} /> Active Orders
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {activeOrders.map(order => <OrderCard key={order._id} order={order} userInfo={userInfo} onRefresh={fetchMyOrders} />)}
+                  </div>
+                </div>
+              )}
+              {pastOrders.length > 0 && (
+                <div>
+                  <h3 style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <CheckCircle size={18} style={{ color: 'var(--color-success)' }} /> Delivered Orders
+                  </h3>
+                  <p style={{ fontSize: '0.875rem', margin: '0 0 1rem', color: 'var(--color-text-muted)' }}>
+                    Click <strong>Leave Reviews</strong> on any delivered order to rate your purchased items.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {pastOrders.map(order => <OrderCard key={order._id} order={order} userInfo={userInfo} onRefresh={fetchMyOrders} />)}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Profile;
