@@ -2,8 +2,7 @@
 
 GadgetPro is a premium, full-stack MERN (MongoDB, Express, React, Node.js) ecommerce platform designed exclusively for high-end tech gadgets. Featuring a sleek, Apple-inspired user interface and a robust administrative backend, GadgetPro acts as a complete end-to-end shopping solution.
 
-![GadgetPro Showcase](https://via.placeholder.com/1200x600/f97316/ffffff?text=GadgetPro+-+Premium+Ecommerce)
-
+live demo : https://thegadgetpro.netlify.app/
 ---
 
 ## ✨ Key Features
