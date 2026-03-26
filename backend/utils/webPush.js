@@ -15,7 +15,7 @@ if (fs.existsSync(keysPath)) {
 }
 
 webpush.setVapidDetails(
-  'mailto:support@gadgetpro.com',
+  'mailto:shamimuhammad77@gmail.com',
   vapidKeys.publicKey,
   vapidKeys.privateKey
 );
