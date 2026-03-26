@@ -63,7 +63,14 @@ const OrderManage = () => {
 
   return (
     <div className="fade-in">
-      <Link to="/admin/orders" className="btn btn-outline" style={{ marginBottom: '2rem' }}>Back to Orders</Link>
+      <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <Link to="/admin/orders" className="btn btn-outline">Back to Orders</Link>
+        {order.isAccepted && (
+          <Link to={`/admin/orders/${order._id}/invoice`} target="_blank" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            🖨️ Print Invoice
+          </Link>
+        )}
+      </div>
       <h2 style={{ marginBottom: '2rem' }}>Order {order._id}</h2>
 
       <div className="grid grid-cols-3" style={{ gap: '2rem' }}>
@@ -72,9 +79,12 @@ const OrderManage = () => {
             <h3 style={{ marginBottom: '1rem' }}>Shipping</h3>
             <p><strong>Name: </strong> {order.user.name}</p>
             <p><strong>Email: </strong> {order.user.email}</p>
-            <p style={{ marginBottom: '1rem' }}>
+            <p style={{ marginBottom: '0.5rem' }}>
               <strong>Address: </strong>
               {order.shippingAddress.address}, {order.shippingAddress.city} {order.shippingAddress.postalCode}, {order.shippingAddress.country}
+            </p>
+            <p style={{ marginBottom: '1rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+              <strong>Phone: </strong> {order.shippingAddress.phone || 'Not Provided'}
             </p>
             {order.isDelivered ? (
               <div className="badge badge-success" style={{ padding: '1rem', display: 'block' }}>Delivered on {new Date(order.deliveredAt).toLocaleString()}</div>

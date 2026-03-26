@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, LogOut, Globe, ChevronRight, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, LogOut, Globe, ChevronRight, RefreshCw, MessageCircle, TrendingUp } from 'lucide-react';
 import useUserStore from '../store/userStore';
 
 const AdminLayout = () => {
@@ -19,6 +19,8 @@ const AdminLayout = () => {
     { to: '/admin/orders', label: 'Orders', icon: <ShoppingCart size={18} /> },
     { to: '/admin/coupons', label: 'Coupons', icon: <Globe size={18} /> },
     { to: '/admin/returns', label: 'Returns', icon: <RefreshCw size={18} /> },
+    { to: '/admin/reviews', label: 'Reviews', icon: <MessageCircle size={18} /> },
+    { to: '/admin/trending', label: 'Trending', icon: <TrendingUp size={18} /> },
   ];
 
   const isActive = (item) => item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to);

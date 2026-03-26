@@ -9,6 +9,7 @@ const Checkout = () => {
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [country, setCountry] = useState('Pakistan');
+  const [phone, setPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Credit Card');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -21,6 +22,8 @@ const Checkout = () => {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [addressLabel, setAddressLabel] = useState('Home');
 
   const navigate = useNavigate();
   const cartItems = useCartStore(s => s.cartItems);
@@ -68,12 +71,24 @@ const Checkout = () => {
       return;
     }
     try {
+      if (saveAddress && addressLabel.trim()) {
+        try {
+          await fetch('/api/users/addresses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo.token}` },
+            body: JSON.stringify({ label: addressLabel, address, city, postalCode, country, phone })
+          });
+        } catch (err) {
+          console.warn('Silent address save fail:', err);
+        }
+      }
+
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo.token}` },
         body: JSON.stringify({
           orderItems: cartItems,
-          shippingAddress: { address, city, postalCode, country },
+          shippingAddress: { address, city, postalCode, country, phone },
           paymentMethod, itemsPrice, shippingPrice, taxPrice, totalPrice,
           discountAmount, couponCode: appliedCoupon?.code
         }),
@@ -127,9 +142,37 @@ const Checkout = () => {
               </div>
               <h3 style={{ margin: 0, fontSize: '1.0625rem' }}>Shipping Address</h3>
             </div>
+            
+            {userInfo?.addresses?.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label">Use a Saved Address</label>
+                <select 
+                  className="form-control" 
+                  onChange={(e) => {
+                    const selected = userInfo.addresses.find(a => a._id === e.target.value);
+                    if (selected) {
+                      setAddress(selected.address); setCity(selected.city);
+                      setPostalCode(selected.postalCode); setCountry(selected.country);
+                      setPhone(selected.phone || '');
+                    }
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>Select an address...</option>
+                  {userInfo.addresses.map(addr => (
+                    <option key={addr._id} value={addr._id}>{addr.label} — {addr.address}, {addr.city}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="form-group">
               <label className="form-label">Street Address</label>
               <input type="text" className="form-control" placeholder="e.g. House 12, Block B, Gulshan" value={address} onChange={e => setAddress(e.target.value)} required />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phone Number (with Country Code)</label>
+              <input type="tel" className="form-control" placeholder="+92 300 1234567" value={phone} onChange={e => setPhone(e.target.value)} required />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
@@ -145,6 +188,17 @@ const Checkout = () => {
               <label className="form-label">Country</label>
               <input type="text" className="form-control" value={country} onChange={e => setCountry(e.target.value)} required />
             </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.25rem', marginBottom: saveAddress ? '1rem' : 0 }}>
+              <input type="checkbox" id="saveAddr" checked={saveAddress} onChange={e => setSaveAddress(e.target.checked)} style={{ cursor: 'pointer' }} />
+              <label htmlFor="saveAddr" style={{ fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', color: 'var(--color-text)' }}>Save this address to my Address Book</label>
+            </div>
+            {saveAddress && (
+              <div className="form-group" style={{ marginBottom: 0, marginTop: '0.5rem' }}>
+                 <label className="form-label">Save as (e.g., Home, Office)</label>
+                 <input type="text" className="form-control" placeholder="Home" value={addressLabel} onChange={e => setAddressLabel(e.target.value)} required={saveAddress} />
+              </div>
+            )}
           </div>
 
           {/* Payment */}
@@ -202,8 +256,8 @@ const Checkout = () => {
           <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: '1.75rem', boxShadow: 'var(--shadow-md)' }}>
             <h3 style={{ marginBottom: '1.375rem', fontSize: '1.0625rem' }}>Order Summary</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              {cartItems.map(item => (
-                <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+              {cartItems.map((item, i) => (
+                <div key={item.product || item._id || i} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
                   <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.name} <span style={{ color: 'var(--color-text-light)' }}>×{item.qty}</span>
                   </span>

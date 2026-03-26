@@ -1,11 +1,34 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
+import PushSubscription from '../models/PushSubscription.js';
 import { sendOrderAcceptedEmail, sendOrderDeliveredEmail } from '../utils/emailService.js';
+import { webpush } from '../utils/webPush.js';
+import asyncHandler from 'express-async-handler';
+
+const sendPush = async (userId, payload) => {
+  try {
+    const subs = await PushSubscription.find({ user: userId });
+    for (const sub of subs) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: sub.keys },
+          JSON.stringify(payload)
+        );
+      } catch (err) {
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await PushSubscription.deleteOne({ _id: sub._id });
+        } else console.error('Push error:', err);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to dispatch push notifications:', err);
+  }
+};
 
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
-const addOrderItems = async (req, res) => {
+const addOrderItems = asyncHandler(async (req, res) => {
   const {
     orderItems,
     shippingAddress,
@@ -47,12 +70,12 @@ const addOrderItems = async (req, res) => {
 
     res.status(201).json(createdOrder);
   }
-};
+});
 
 // @desc    Get order by ID
 // @route   GET /api/orders/:id
 // @access  Private
-const getOrderById = async (req, res) => {
+const getOrderById = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate('user', 'name email');
 
   if (order) {
@@ -61,20 +84,20 @@ const getOrderById = async (req, res) => {
     res.status(404);
     throw new Error('Order not found');
   }
-};
+});
 
 // @desc    Get all orders
 // @route   GET /api/orders
 // @access  Private/Admin
-const getOrders = async (req, res) => {
+const getOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({}).populate('user', 'id name');
   res.json(orders);
-};
+});
 
 // @desc    Update order to paid (Cash on Delivery or Admin override)
 // @route   PUT /api/orders/:id/pay
 // @access  Private/Admin
-const updateOrderToPaid = async (req, res) => {
+const updateOrderToPaid = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
   if (order) {
@@ -93,50 +116,68 @@ const updateOrderToPaid = async (req, res) => {
     res.status(404);
     throw new Error('Order not found');
   }
-};
+});
 
 // @desc    Update order to delivered
 // @route   PUT /api/orders/:id/deliver
 // @access  Private/Admin
-const updateOrderToDelivered = async (req, res) => {
+const updateOrderToDelivered = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate('user', 'name email');
   if (order) {
     order.isDelivered = true;
     order.deliveredAt = Date.now();
     const updatedOrder = await order.save();
+    
     // Send email notification
     sendOrderDeliveredEmail(order.user.email, updatedOrder).catch(console.error);
+    
+    // Send Web Push notification
+    sendPush(order.user._id, {
+      title: 'Order Delivered! 🎉',
+      body: `Your order ending in #${order._id.toString().slice(-6).toUpperCase()} has arrived. Enjoy!`,
+      url: '/profile'
+    });
+
     res.json(updatedOrder);
   } else {
     res.status(404);
     throw new Error('Order not found');
   }
-};
+});
 
 // @desc    Get logged in user orders
 // @route   GET /api/orders/mine
 // @access  Private
-const getMyOrders = async (req, res) => {
+const getMyOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({ user: req.user._id });
   res.json(orders);
-};
+});
 
 // @desc    Accept order (admin)
 // @route   PUT /api/orders/:id/accept
 // @access  Private/Admin
-const acceptOrder = async (req, res) => {
+const acceptOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate('user', 'name email');
   if (order) {
     order.isAccepted = true;
     order.acceptedAt = Date.now();
     const updatedOrder = await order.save();
+    
     // Send email notification
     sendOrderAcceptedEmail(order.user.email, updatedOrder).catch(console.error);
+    
+    // Send Web Push notification
+    sendPush(order.user._id, {
+      title: 'Order Approved ✅',
+      body: `Your order ending in #${order._id.toString().slice(-6).toUpperCase()} is now processing!`,
+      url: '/profile'
+    });
+
     res.json(updatedOrder);
   } else {
     res.status(404);
     throw new Error('Order not found');
   }
-};
+});
 
 export { addOrderItems, getOrderById, getOrders, updateOrderToPaid, updateOrderToDelivered, getMyOrders, acceptOrder };

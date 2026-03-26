@@ -269,6 +269,12 @@ const ProductDetail = () => {
                         {review.image && (
                           <img src={review.image} alt="Review" style={{ maxWidth: '180px', borderRadius: '10px', marginTop: '0.875rem', border: '1px solid var(--color-border)' }} />
                         )}
+                        {review.adminReply && (
+                          <div style={{ marginTop: '1rem', background: 'var(--color-primary-light)', padding: '0.875rem 1rem', borderRadius: '10px', borderLeft: '3px solid var(--color-primary)' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', marginBottom: '0.25rem' }}>💬 GadgetPro Response</div>
+                            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text)' }}>{review.adminReply}</p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

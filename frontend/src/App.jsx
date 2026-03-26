@@ -17,10 +17,16 @@ import ProductList from './pages/admin/ProductList';
 import ProductEdit from './pages/admin/ProductEdit';
 import OrderList from './pages/admin/OrderList';
 import OrderManage from './pages/admin/OrderManage';
+import OrderInvoice from './pages/admin/OrderInvoice';
 import CouponList from './pages/admin/CouponList';
 import ReturnList from './pages/admin/ReturnList';
+import ReviewManager from './pages/admin/ReviewManager';
+import TrendingPage from './pages/admin/TrendingPage';
+import { usePushNotifications } from './hooks/usePushNotifications';
 
 function App() {
+  usePushNotifications();
+
   return (
     <Router>
       <Routes>
@@ -45,7 +51,12 @@ function App() {
           <Route path="orders/:id" element={<OrderManage />} />
           <Route path="coupons" element={<CouponList />} />
           <Route path="returns" element={<ReturnList />} />
+          <Route path="reviews" element={<ReviewManager />} />
+          <Route path="trending" element={<TrendingPage />} />
         </Route>
+
+        {/* Standalone Printable Routes */}
+        <Route path="/admin/orders/:id/invoice" element={<OrderInvoice />} />
       </Routes>
     </Router>
   );

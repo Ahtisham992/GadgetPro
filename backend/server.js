@@ -10,6 +10,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
 import returnRoutes from './routes/returnRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 import User from './models/User.js';
@@ -39,6 +40,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/returns', returnRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 import path from 'path';
 const __dirname = path.resolve();

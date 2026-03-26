@@ -5,16 +5,10 @@ const reviewSchema = mongoose.Schema({
   rating: { type: Number, required: true },
   comment: { type: String, required: true },
   image: { type: String },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'User',
-  },
-  orderId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'Order',
-  },
+  user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
+  orderId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Order' },
+  adminReply: { type: String, default: '' },
+  adminReplyAt: { type: Date },
 }, { timestamps: true });
 
 const productSchema = mongoose.Schema({

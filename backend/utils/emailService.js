@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 
-const transporter = nodemailer.createTransport({
+const getTransporter = () => nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: Number(process.env.EMAIL_PORT) || 587,
   secure: false,
@@ -11,11 +11,12 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmail = async ({ to, subject, html }) => {
-  if (!process.env.EMAIL_USER) {
-    console.log('[Email] No EMAIL_USER set — skipping email to', to);
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.log('[Email] Missing EMAIL_USER or EMAIL_PASS in .env — skipping email to', to);
     return;
   }
   try {
+    const transporter = getTransporter();
     await transporter.sendMail({
       from: `"GadgetPro" <${process.env.EMAIL_USER}>`,
       to,
@@ -56,6 +57,25 @@ export const sendOrderDeliveredEmail = (email, order) =>
         <p>Order ID: <strong>#${order._id.toString().slice(-8).toUpperCase()}</strong></p>
         <p>Total: <strong>PKR ${order.totalPrice?.toLocaleString()}</strong></p>
         <p>We hope you love your purchase! Please visit your <strong>My Orders</strong> page to leave a review.</p>
+        <hr/>
+        <p style="color:#9ca3af;font-size:12px">GadgetPro — Premium Tech Store</p>
+      </div>
+    `,
+  });
+
+export const sendOtpEmail = (email, otp, name = 'there') =>
+  sendEmail({
+    to: email,
+    subject: '🔐 Your GadgetPro Verification Code',
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:auto;padding:32px;background:#f9fafb;border-radius:12px">
+        <h2 style="color:#f97316">GadgetPro 🛒</h2>
+        <h3>Hi ${name}, Welcome to GadgetPro!</h3>
+        <p>Use the following one-time code to verify your email address:</p>
+        <div style="text-align:center;margin:24px 0">
+          <span style="font-size:2.5rem;font-weight:900;letter-spacing:12px;color:#111827;background:#fff;padding:16px 24px;border-radius:12px;border:2px solid #f97316;display:inline-block">${otp}</span>
+        </div>
+        <p style="color:#6b7280;font-size:0.9rem">This code expires in <strong>10 minutes</strong>. If you didn't create a GadgetPro account, you can safely ignore this email.</p>
         <hr/>
         <p style="color:#9ca3af;font-size:12px">GadgetPro — Premium Tech Store</p>
       </div>

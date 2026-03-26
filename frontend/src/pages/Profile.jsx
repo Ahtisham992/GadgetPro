@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useUserStore from '../store/userStore';
-import { Package, Clock, CheckCircle, Truck, Star, X, Upload } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, Star, X, MapPin, Trash2, Plus } from 'lucide-react';
 
 const STATUS_CONFIG = {
   delivered: { label: 'Delivered', color: 'var(--color-success)', bg: 'var(--color-success-bg)', icon: <CheckCircle size={13} /> },
@@ -47,7 +47,6 @@ const ReviewModal = ({ item, orderId, userInfo, onClose, onSuccess }) => {
       const res = await fetch(`/api/products/${item.product}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo.token}` },
-        // Send orderId so backend scopes the duplicate check per-order
         body: JSON.stringify({ rating, comment, image: reviewImage, orderId }),
       });
       const data = await res.json();
@@ -66,12 +65,10 @@ const ReviewModal = ({ item, orderId, userInfo, onClose, onSuccess }) => {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="fade-in" style={{ background: 'var(--color-surface)', borderRadius: '20px', padding: '2rem', width: '100%', maxWidth: '480px', boxShadow: 'var(--shadow-xl)', position: 'relative' }}>
-        {/* Close */}
         <button onClick={onClose} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'var(--color-bg-alt)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)' }}>
           <X size={16} />
         </button>
 
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.5rem', paddingRight: '2rem' }}>
           <img src={item.image} alt={item.name} style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '10px', background: 'var(--color-bg-alt)', padding: '4px', flexShrink: 0 }} />
           <div>
@@ -80,73 +77,58 @@ const ReviewModal = ({ item, orderId, userInfo, onClose, onSuccess }) => {
           </div>
         </div>
 
-        {error && <div className="alert alert-danger" style={{ marginBottom: '1.25rem', fontSize: '0.875rem' }}>{error}</div>}
+        {error && <div className="alert alert-danger" style={{ marginBottom: '1rem' }}>{error}</div>}
 
         <form onSubmit={submitHandler}>
-          {/* Star Rating */}
-          <div className="form-group">
-            <label className="form-label">Rating *</label>
-            <div style={{ display: 'flex', gap: '0.25rem' }}>
-              {[1, 2, 3, 4, 5].map(star => (
-                <button
+          <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+            <div style={{ display: 'inline-flex', gap: '0.5rem', cursor: 'pointer' }} onMouseLeave={() => setHoverRating(0)}>
+              {[1,2,3,4,5].map(star => (
+                <Star
                   key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
+                  size={32}
+                  fill={(hoverRating || rating) >= star ? '#FBBF24' : 'none'}
+                  color={(hoverRating || rating) >= star ? '#FBBF24' : 'var(--color-border)'}
                   onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(0)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', transition: 'transform 0.1s' }}
-                >
-                  <Star
-                    size={30}
-                    fill={(hoverRating || rating) >= star ? '#FBBF24' : 'none'}
-                    color={(hoverRating || rating) >= star ? '#FBBF24' : '#D1D5DB'}
-                    style={{ transition: 'all 0.1s' }}
-                  />
-                </button>
+                  onClick={() => setRating(star)}
+                  style={{ transition: 'all 0.15s' }}
+                />
               ))}
-              {rating > 0 && (
-                <span style={{ alignSelf: 'center', marginLeft: '0.5rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                  {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}
-                </span>
-              )}
+            </div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '0.5rem', fontWeight: 600 }}>
+              {rating === 0 ? 'Select a rating' : ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating - 1]}
             </div>
           </div>
 
-          {/* Comment */}
           <div className="form-group">
-            <label className="form-label">Your Review *</label>
+            <label className="form-label">Title/Summary (Optional)</label>
+            <input type="text" className="form-control" placeholder="e.g. Great product!" />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Your Review</label>
             <textarea
-              className="form-control"
-              rows={4}
-              placeholder="Share your experience with this product..."
-              value={comment}
-              onChange={e => setComment(e.target.value)}
+              className="form-control" rows={4} style={{ resize: 'vertical' }}
+              placeholder="What did you like or dislike? What should other shoppers know?"
+              value={comment} onChange={e => setComment(e.target.value)}
               required
             />
           </div>
 
-          {/* Photo Upload */}
-          <div className="form-group">
-            <label className="form-label">Attach Photo <span style={{ color: 'var(--color-text-light)', fontWeight: 400 }}>(optional)</span></label>
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: '0.625rem',
-              cursor: 'pointer', border: '1.5px dashed var(--color-border)',
-              borderRadius: 'var(--radius-lg)', padding: '0.75rem 1rem',
-              color: 'var(--color-text-muted)', fontSize: '0.875rem',
-              transition: 'border-color 0.15s, background 0.15s',
-              background: reviewImage ? 'var(--color-success-bg)' : 'transparent',
-              borderColor: reviewImage ? 'var(--color-success)' : 'var(--color-border)',
-            }}
-              onMouseEnter={e => !reviewImage && (e.currentTarget.style.borderColor = 'var(--color-primary)')}
-              onMouseLeave={e => !reviewImage && (e.currentTarget.style.borderColor = 'var(--color-border)')}
-            >
-              <Upload size={15} />
-              {uploading ? 'Uploading...' : reviewImage ? '✓ Photo attached' : 'Click to attach a photo'}
-              <input type="file" accept="image/*" onChange={uploadFileHandler} style={{ display: 'none' }} />
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Add a Photo (Optional)</span>
+              {uploading && <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>Uploading...</span>}
             </label>
-            {reviewImage && (
-              <div style={{ marginTop: '0.75rem', position: 'relative', display: 'inline-block' }}>
-                <img src={reviewImage} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--color-border)' }} />
+            {!reviewImage ? (
+              <div style={{ border: '2px dashed var(--color-border)', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', background: 'var(--color-bg-alt)', transition: 'border-color 0.2s', position: 'relative' }}>
+                <input type="file" onChange={uploadFileHandler} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} accept="image/*" />
+                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>
+                  <span style={{ color: 'var(--color-primary)' }}>Click to upload</span> or drag and drop
+                </div>
+              </div>
+            ) : (
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <img src={reviewImage} alt="Review attachment" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px', border: '1px solid var(--color-border)' }} />
                 <button type="button" onClick={() => setReviewImage('')}
                   style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--color-danger)', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', color: '#fff', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
               </div>
@@ -170,11 +152,9 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
   const status = getOrderStatus(order);
   const { color, bg, label, icon } = STATUS_CONFIG[status];
   const [reviewTarget, setReviewTarget] = useState(null);
-  // Track reviewed items as 'orderId:productId' composite keys
   const [reviewedKeys, setReviewedKeys] = useState(new Set());
   const [checkingReviews, setCheckingReviews] = useState(false);
 
-  // Auto-load review status when order is delivered
   useEffect(() => {
     if (!order.isDelivered || !userInfo) return;
     const checkReviewed = async () => {
@@ -226,7 +206,6 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
 
   return (
     <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
-      {/* Header */}
       <div style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.2rem' }}>Order ID</div>
@@ -243,7 +222,6 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
         </div>
       </div>
 
-      {/* Items preview */}
       <div style={{ padding: '0 1.25rem 1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         {order.orderItems?.map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', background: 'var(--color-bg-alt)', borderRadius: '8px', padding: '0.3rem 0.625rem' }}>
@@ -253,7 +231,6 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
         ))}
       </div>
 
-      {/* Footer */}
       <div style={{ padding: '0.875rem 1.25rem', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg-alt)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
           {order.isPaid || order.paymentMethod === 'Credit Card'
@@ -263,23 +240,19 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          {/* Request Return Button */}
           {order.isDelivered && (
             <button
               className="btn btn-outline"
               style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem', borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
               onClick={() => {
                 const reason = window.prompt('Please enter a reason for returning this order:');
-                if (reason && reason.trim()) {
-                  handleRequestReturn(order._id, reason.trim());
-                }
+                if (reason && reason.trim()) handleRequestReturn(order._id, reason.trim());
               }}
             >
               Request Return
             </button>
           )}
 
-          {/* Reviewed badge */}
           {order.isDelivered && allReviewed && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, background: 'var(--color-success-bg)', color: 'var(--color-success)' }}>
               <CheckCircle size={13} /> All Reviewed
@@ -288,7 +261,6 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
         </div>
       </div>
 
-      {/* Per-item review section — always visible for delivered orders */}
       {order.isDelivered && (
         <div className="fade-in" style={{ padding: '1.25rem', borderTop: '1px solid var(--color-border)' }}>
           {checkingReviews ? (
@@ -317,11 +289,7 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
                           <CheckCircle size={14} /> Reviewed
                         </span>
                       ) : (
-                        <button
-                          className="btn btn-sm btn-primary"
-                          style={{ flexShrink: 0, marginLeft: '1rem', fontSize: '0.8125rem' }}
-                          onClick={() => setReviewTarget(item)}
-                        >
+                        <button className="btn btn-sm btn-primary" style={{ flexShrink: 0, marginLeft: '1rem', fontSize: '0.8125rem' }} onClick={() => setReviewTarget(item)}>
                           <Star size={12} /> Write Review
                         </button>
                       )}
@@ -334,7 +302,6 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
         </div>
       )}
 
-      {/* Review Modal */}
       {reviewTarget && (
         <ReviewModal
           item={reviewTarget}
@@ -350,10 +317,20 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
 
 /* ─── Profile Page ─── */
 const Profile = () => {
+  const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'addresses'
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { userInfo } = useUserStore();
+  const { userInfo, updateUserInfo } = useUserStore();
   const navigate = useNavigate();
+
+  // Address form state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newLabel, setNewLabel] = useState('Home');
+  const [newAddress, setNewAddress] = useState('');
+  const [newCity, setNewCity] = useState('');
+  const [newPostalCode, setNewPostalCode] = useState('');
+  const [newCountry, setNewCountry] = useState('Pakistan');
+  const [newPhone, setNewPhone] = useState('');
 
   const fetchMyOrders = useCallback(async () => {
     if (!userInfo) return;
@@ -361,17 +338,54 @@ const Profile = () => {
       const res = await fetch('/api/orders/mine', { headers: { Authorization: `Bearer ${userInfo.token}` } });
       const data = await res.json();
       setOrders(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   }, [userInfo]);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      const res = await fetch('/api/users/profile', { headers: { Authorization: `Bearer ${userInfo.token}` } });
+      const data = await res.json();
+      updateUserInfo({ ...userInfo, addresses: data.addresses });
+    } catch { /* ignore */ }
+  }, [userInfo, updateUserInfo]);
 
   useEffect(() => {
     if (!userInfo) { navigate('/login'); return; }
     fetchMyOrders();
-  }, [userInfo, navigate, fetchMyOrders]);
+    fetchProfile();
+  }, [userInfo?.token, navigate, fetchMyOrders, fetchProfile]);
+
+  const handleAddAddress = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/users/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo.token}` },
+        body: JSON.stringify({ label: newLabel, address: newAddress, city: newCity, postalCode: newPostalCode, country: newCountry, phone: newPhone })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error();
+      updateUserInfo({ ...userInfo, addresses: data });
+      setShowAddForm(false);
+      setNewLabel('Home'); setNewAddress(''); setNewCity(''); setNewPostalCode(''); setNewPhone('');
+    } catch (err) { alert('Failed to add address'); }
+  };
+
+  const handleDeleteAddress = async (id) => {
+    if (!window.confirm('Delete this address?')) return;
+    try {
+      const res = await fetch(`/api/users/addresses/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${userInfo.token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error();
+      updateUserInfo({ ...userInfo, addresses: data });
+    } catch (err) { alert('Failed to delete address'); }
+  };
+
+  if (!userInfo) return null;
 
   const activeOrders = orders.filter(o => !o.isDelivered);
   const pastOrders = orders.filter(o => o.isDelivered);
@@ -391,58 +405,144 @@ const Profile = () => {
               <div style={{ fontWeight: 700, fontSize: '1.0625rem', marginBottom: '0.25rem' }}>{userInfo?.name}</div>
               <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>{userInfo?.email}</div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {[
-                { icon: <Package size={16} />, label: 'All Orders', count: orders.length },
-                { icon: <Clock size={16} />, label: 'In Progress', count: activeOrders.length },
-                { icon: <CheckCircle size={16} />, label: 'Delivered', count: pastOrders.length },
-              ].map(item => (
-                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem 0.875rem', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-alt)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{item.icon} {item.label}</span>
-                  <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-primary)' }}>{item.count}</span>
-                </div>
-              ))}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <button
+                onClick={() => setActiveTab('orders')}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.75rem 1rem', borderRadius: 'var(--radius-lg)', background: activeTab === 'orders' ? 'var(--color-primary-light)' : 'transparent', border: 'none', color: activeTab === 'orders' ? 'var(--color-primary)' : 'var(--color-text-muted)', fontWeight: 600, fontSize: '0.9375rem', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' }}
+              >
+                <Package size={18} /> My Orders
+              </button>
+              <button
+                onClick={() => setActiveTab('addresses')}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.75rem 1rem', borderRadius: 'var(--radius-lg)', background: activeTab === 'addresses' ? 'var(--color-primary-light)' : 'transparent', border: 'none', color: activeTab === 'addresses' ? 'var(--color-primary)' : 'var(--color-text-muted)', fontWeight: 600, fontSize: '0.9375rem', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' }}
+              >
+                <MapPin size={18} /> Address Book
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Orders */}
+        {/* Content Area */}
         <div>
-          {loading ? (
-            <div className="loader" />
-          ) : orders.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border)' }}>
-              <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>📦</div>
-              <h3 style={{ marginBottom: '0.75rem' }}>No orders yet</h3>
-              <p style={{ marginBottom: '1.5rem' }}>Start shopping and your orders will appear here.</p>
-              <Link to="/"><button className="btn btn-primary">Browse Products</button></Link>
+          {/* ORDERS TAB */}
+          {activeTab === 'orders' && (
+            <div className="fade-in">
+              {loading ? (
+                <div className="loader" />
+              ) : orders.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border)' }}>
+                  <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>📦</div>
+                  <h3 style={{ marginBottom: '0.75rem' }}>No orders yet</h3>
+                  <p style={{ marginBottom: '1.5rem' }}>Start shopping and your orders will appear here.</p>
+                  <Link to="/"><button className="btn btn-primary">Browse Products</button></Link>
+                </div>
+              ) : (
+                <>
+                  {activeOrders.length > 0 && (
+                    <div style={{ marginBottom: '2rem' }}>
+                      <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Clock size={18} style={{ color: 'var(--color-warning)' }} /> Active Orders
+                      </h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {activeOrders.map(order => <OrderCard key={order._id} order={order} userInfo={userInfo} onRefresh={fetchMyOrders} />)}
+                      </div>
+                    </div>
+                  )}
+                  {pastOrders.length > 0 && (
+                    <div>
+                      <h3 style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <CheckCircle size={18} style={{ color: 'var(--color-success)' }} /> Delivered Orders
+                      </h3>
+                      <p style={{ fontSize: '0.875rem', margin: '0 0 1rem', color: 'var(--color-text-muted)' }}>
+                        Click <strong>Leave Reviews</strong> on any delivered order to rate your purchased items.
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {pastOrders.map(order => <OrderCard key={order._id} order={order} userInfo={userInfo} onRefresh={fetchMyOrders} />)}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          ) : (
-            <>
-              {activeOrders.length > 0 && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Clock size={18} style={{ color: 'var(--color-warning)' }} /> Active Orders
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {activeOrders.map(order => <OrderCard key={order._id} order={order} userInfo={userInfo} onRefresh={fetchMyOrders} />)}
-                  </div>
+          )}
+
+          {/* ADDRESSES TAB */}
+          {activeTab === 'addresses' && (
+            <div className="fade-in">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ margin: 0 }}>Saved Addresses</h3>
+                {!showAddForm && (
+                  <button className="btn btn-primary btn-sm" onClick={() => setShowAddForm(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Plus size={16} /> Add New
+                  </button>
+                )}
+              </div>
+
+              {showAddForm && (
+                <div className="fade-in" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: '1.75rem', marginBottom: '1.5rem' }}>
+                  <h4 style={{ margin: '0 0 1.25rem' }}>Add New Address</h4>
+                  <form onSubmit={handleAddAddress}>
+                    <div className="form-group">
+                      <label className="form-label">Label (e.g., Home, Office)</label>
+                      <input type="text" className="form-control" value={newLabel} onChange={e => setNewLabel(e.target.value)} required />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Phone Number (with country code)</label>
+                      <input type="tel" className="form-control" placeholder="+92 300 1234567" value={newPhone} onChange={e => setNewPhone(e.target.value)} required />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Street Address</label>
+                      <input type="text" className="form-control" value={newAddress} onChange={e => setNewAddress(e.target.value)} required />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label">City</label>
+                        <input type="text" className="form-control" value={newCity} onChange={e => setNewCity(e.target.value)} required />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Postal Code</label>
+                        <input type="text" className="form-control" value={newPostalCode} onChange={e => setNewPostalCode(e.target.value)} required />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Country</label>
+                      <input type="text" className="form-control" value={newCountry} onChange={e => setNewCountry(e.target.value)} required />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                      <button type="button" className="btn btn-outline" onClick={() => setShowAddForm(false)}>Cancel</button>
+                      <button type="submit" className="btn btn-primary">Save Address</button>
+                    </div>
+                  </form>
                 </div>
               )}
-              {pastOrders.length > 0 && (
-                <div>
-                  <h3 style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <CheckCircle size={18} style={{ color: 'var(--color-success)' }} /> Delivered Orders
-                  </h3>
-                  <p style={{ fontSize: '0.875rem', margin: '0 0 1rem', color: 'var(--color-text-muted)' }}>
-                    Click <strong>Leave Reviews</strong> on any delivered order to rate your purchased items.
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {pastOrders.map(order => <OrderCard key={order._id} order={order} userInfo={userInfo} onRefresh={fetchMyOrders} />)}
-                  </div>
+
+              {userInfo?.addresses?.length === 0 ? (
+                !showAddForm && <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--color-bg-alt)', borderRadius: 'var(--radius-xl)', color: 'var(--color-text-muted)' }}>No saved addresses.</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                  {userInfo?.addresses?.map(addr => (
+                    <div key={addr._id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', position: 'relative' }}>
+                      <button 
+                        onClick={() => handleDeleteAddress(addr._id)}
+                        style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '0.25rem' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <div style={{ display: 'inline-block', padding: '0.2rem 0.6rem', background: 'var(--color-bg-alt)', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--color-text)' }}>
+                        {addr.label}
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem' }}>{addr.phone || 'No phone added'}</div>
+                      <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                        {addr.address}<br />
+                        {addr.city}, {addr.postalCode}<br />
+                        {addr.country}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>
