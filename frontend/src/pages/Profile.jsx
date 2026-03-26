@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useUserStore from '../store/userStore';
+import { createPortal } from 'react-dom';
 import { Package, Clock, CheckCircle, Truck, Star, X, MapPin, Trash2, Plus } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -59,7 +60,7 @@ const ReviewModal = ({ item, orderId, userInfo, onClose, onSuccess }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
@@ -143,7 +144,8 @@ const ReviewModal = ({ item, orderId, userInfo, onClose, onSuccess }) => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -155,29 +157,40 @@ const OrderCard = ({ order, userInfo, onRefresh }) => {
   const [reviewedKeys, setReviewedKeys] = useState(new Set());
   const [checkingReviews, setCheckingReviews] = useState(false);
 
+  // ✅ FIX: Use stable primitive IDs as deps — avoids infinite loop from object identity changes.
+  //         Also skip if we already have results to prevent re-fetching after a review is submitted.
+  const orderId = order._id;
+  const userId  = userInfo?._id;
   useEffect(() => {
-    if (!order.isDelivered || !userInfo) return;
+    if (!order.isDelivered || !userId || reviewedKeys.size > 0) return;
+    
+    let isMounted = true;
     const checkReviewed = async () => {
       setCheckingReviews(true);
       const keys = new Set();
-      await Promise.all(
-        (order.orderItems || []).map(async (item) => {
-          try {
+      try {
+        await Promise.all(
+          (order.orderItems || []).map(async (item) => {
             const res = await fetch(`/api/products/${item.product}`);
             const data = await res.json();
             const alreadyReviewed = data.reviews?.some(
-              (r) => (r.user === userInfo._id || r.user === userInfo._id?.toString())
-                     && r.orderId === order._id
+              (r) => (r.user === userId || r.user === String(userId))
+                     && r.orderId === orderId
             );
-            if (alreadyReviewed) keys.add(`${order._id}:${item.product}`);
-          } catch { /* ignore */ }
-        })
-      );
-      setReviewedKeys(keys);
-      setCheckingReviews(false);
+            if (alreadyReviewed) keys.add(`${orderId}:${item.product}`);
+          })
+        );
+        if (isMounted) {
+          setReviewedKeys(keys);
+          setCheckingReviews(false);
+        }
+      } catch {
+        if (isMounted) setCheckingReviews(false);
+      }
     };
     checkReviewed();
-  }, [order, userInfo]);
+    return () => { isMounted = false; };
+  }, [orderId, order.isDelivered, userId]); // Stable dependencies
 
   const totalItems = order.orderItems?.length || 0;
   const allReviewed = totalItems > 0 && reviewedKeys.size >= totalItems;
@@ -332,29 +345,40 @@ const Profile = () => {
   const [newCountry, setNewCountry] = useState('Pakistan');
   const [newPhone, setNewPhone] = useState('');
 
+  // ✅ FIX: Use a ref to store userInfo to keep callbacks stable and avoid infinite re-render loop
+  const userInfoRef = useRef(userInfo);
+  useEffect(() => { userInfoRef.current = userInfo; }, [userInfo]);
+
   const fetchMyOrders = useCallback(async () => {
-    if (!userInfo) return;
+    const ui = userInfoRef.current;
+    if (!ui?.token) return;
     try {
-      const res = await fetch('/api/orders/mine', { headers: { Authorization: `Bearer ${userInfo.token}` } });
+      const res = await fetch('/api/orders/mine', { headers: { Authorization: `Bearer ${ui.token}` } });
       const data = await res.json();
       setOrders(data);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  }, [userInfo]);
+  }, []); // Only token matters, but we read it via ref now
 
   const fetchProfile = useCallback(async () => {
+    const ui = userInfoRef.current;
+    if (!ui?.token) return;
     try {
-      const res = await fetch('/api/users/profile', { headers: { Authorization: `Bearer ${userInfo.token}` } });
+      const res = await fetch('/api/users/profile', { headers: { Authorization: `Bearer ${ui.token}` } });
       const data = await res.json();
-      updateUserInfo({ ...userInfo, addresses: data.addresses });
+      // Only update if addresses count changed (loose check to prevent loop)
+      if (data.addresses?.length !== ui.addresses?.length) {
+        updateUserInfo({ ...ui, addresses: data.addresses });
+      }
     } catch { /* ignore */ }
-  }, [userInfo, updateUserInfo]);
+  }, [updateUserInfo]); // stable
 
   useEffect(() => {
     if (!userInfo) { navigate('/login'); return; }
     fetchMyOrders();
     fetchProfile();
-  }, [userInfo?.token, navigate, fetchMyOrders, fetchProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInfo?.token]); // ← run ONLY when the user logs in/out, never on profile updates (circular loop prevention)
 
   const handleAddAddress = async (e) => {
     e.preventDefault();
