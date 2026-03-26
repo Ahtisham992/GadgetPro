@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';   // ← Fix #4
 import PublicLayout from './components/PublicLayout';
 import AdminLayout from './components/AdminLayout';
 
@@ -29,6 +30,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />   {/* ← scrolls to top on every route change */}
       <Routes>
         {/* Public Storefront */}
         <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />

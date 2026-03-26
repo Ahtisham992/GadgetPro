@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import useUserStore from '../../store/userStore';
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement, LineElement,
-  BarElement, ArcElement, Title, Tooltip, Legend, Filler
+  BarElement, ArcElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
+import { RefreshCw } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, ArcElement, Title, Tooltip, Legend, Filler
 );
+
+const REFRESH_INTERVAL = 30_000; // 30 seconds
 
 const CHART_COLORS = {
   primary: '#F97316',
@@ -32,33 +35,44 @@ const DashboardOverview = () => {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [refreshing, setRefreshing] = useState(false);
   const userInfo = useUserStore((state) => state.userInfo);
+  const timerRef = useRef(null);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [ordersRes, productsRes] = await Promise.all([
-          fetch('/api/orders', { headers: { Authorization: `Bearer ${userInfo.token}` } }),
-          fetch('/api/products?limit=100'),
-        ]);
-        const ordersData = await ordersRes.json();
-        const productsData = await productsRes.json();
-        setOrders(Array.isArray(ordersData) ? ordersData : []);
-        setProducts(Array.isArray(productsData.products) ? productsData.products : []);
-      } catch (error) { console.error(error); }
-      finally { setLoading(false); }
-    };
-    fetchStats();
+  const fetchStats = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+    try {
+      const [ordersRes, productsRes] = await Promise.all([
+        fetch('/api/orders', { headers: { Authorization: `Bearer ${userInfo.token}` } }),
+        fetch('/api/products?limit=100'),
+      ]);
+      const ordersData = await ordersRes.json();
+      const productsData = await productsRes.json();
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+      setProducts(Array.isArray(productsData.products) ? productsData.products : []);
+      setLastRefreshed(new Date());
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); setRefreshing(false); }
   }, [userInfo]);
+
+  // Initial load
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  // ✅ Fix #5: Auto-refresh every 30 s
+  useEffect(() => {
+    timerRef.current = setInterval(() => fetchStats(true), REFRESH_INTERVAL);
+    return () => clearInterval(timerRef.current);
+  }, [fetchStats]);
 
   if (loading) return <div className="loader" />;
 
   const revenue = orders.filter(o => o.isPaid).reduce((a, o) => a + o.totalPrice, 0);
-  const totalOrders = orders.length;
   const pendingOrders = orders.filter(o => !o.isAccepted).length;
   const completedOrders = orders.filter(o => o.isDelivered).length;
 
-  // Revenue by last 7 days
+  // Revenue — last 7 days
   const last7 = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -66,8 +80,7 @@ const DashboardOverview = () => {
   });
   const revenueByDay = last7.map(date => {
     const dayStr = date.toISOString().slice(0, 10);
-    return orders
-      .filter(o => o.isPaid && o.paidAt?.slice(0, 10) === dayStr)
+    return orders.filter(o => o.isPaid && o.paidAt?.slice(0, 10) === dayStr)
       .reduce((a, o) => a + o.totalPrice, 0);
   });
   const lineData = {
@@ -84,7 +97,6 @@ const DashboardOverview = () => {
     }],
   };
 
-  // Orders by status
   const doughnutData = {
     labels: ['New Orders', 'Pending Delivery', 'Delivered'],
     datasets: [{
@@ -98,23 +110,17 @@ const DashboardOverview = () => {
     }],
   };
 
-  // Top products by number of orders
   const productHits = {};
-  orders.forEach(o => {
-    o.orderItems?.forEach(item => {
-      productHits[item.name] = (productHits[item.name] || 0) + item.qty;
-    });
-  });
+  orders.forEach(o => o.orderItems?.forEach(item => {
+    productHits[item.name] = (productHits[item.name] || 0) + item.qty;
+  }));
   const topProducts = Object.entries(productHits).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const barData = {
     labels: topProducts.map(([name]) => name.length > 18 ? name.slice(0, 18) + '…' : name),
     datasets: [{
       label: 'Units Sold',
       data: topProducts.map(([, qty]) => qty),
-      backgroundColor: [
-        CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.info,
-        CHART_COLORS.warning, CHART_COLORS.purple,
-      ],
+      backgroundColor: [CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.info, CHART_COLORS.warning, CHART_COLORS.purple],
       borderRadius: 8,
     }],
   };
@@ -127,23 +133,40 @@ const DashboardOverview = () => {
 
   return (
     <div className="fade-in">
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.75rem' }}>Dashboard Overview</h1>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Dashboard Overview</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+            Last updated: {lastRefreshed.toLocaleTimeString()}
+          </span>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => fetchStats(true)}
+            disabled={refreshing}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}
+          >
+            <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.7s linear infinite' : 'none' }} />
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
+      </div>
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
         <StatCard label="Total Revenue" value={`PKR ${revenue.toLocaleString()}`} subtext="From paid orders" accent={CHART_COLORS.primary} />
-        <StatCard label="Total Orders" value={totalOrders} subtext={`${pendingOrders} pending`} accent={CHART_COLORS.info} />
+        <StatCard label="Total Orders" value={orders.length} subtext={`${pendingOrders} pending`} accent={CHART_COLORS.info} />
         <StatCard label="Delivered" value={completedOrders} subtext="Completed orders" accent={CHART_COLORS.success} />
         <StatCard label="Products" value={products.length} subtext="In inventory" accent={CHART_COLORS.purple} />
       </div>
 
-      {/* Charts Row 1: Revenue Line */}
+      {/* Revenue Line Chart */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
         <div style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.9375rem' }}>Revenue — Last 7 Days</div>
         <Line data={lineData} options={chartOptions} height={80} />
       </div>
 
-      {/* Charts Row 2: Doughnut + Bar */}
+      {/* Doughnut + Bar */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
         <div className="card" style={{ padding: '1.5rem' }}>
           <div style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.9375rem' }}>Orders by Status</div>

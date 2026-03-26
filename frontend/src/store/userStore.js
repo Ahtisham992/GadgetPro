@@ -1,10 +1,17 @@
 import { create } from 'zustand';
 
 const useUserStore = create((set) => ({
-  userInfo: localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')) : null,
+  userInfo: localStorage.getItem('userInfo')
+    ? JSON.parse(localStorage.getItem('userInfo'))
+    : null,
 
-  // Simply receives the user data object (fetched by the calling page) and persists it
   login: (userData) => {
+    localStorage.setItem('userInfo', JSON.stringify(userData));
+    set({ userInfo: userData });
+  },
+
+  // ✅ FIX: was missing — used by Profile & Checkout to sync address changes
+  updateUserInfo: (userData) => {
     localStorage.setItem('userInfo', JSON.stringify(userData));
     set({ userInfo: userData });
   },
@@ -21,7 +28,7 @@ const useUserStore = create((set) => ({
       localStorage.setItem('userInfo', JSON.stringify(data));
       set({ userInfo: data });
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   },
@@ -29,7 +36,7 @@ const useUserStore = create((set) => ({
   logout: () => {
     localStorage.removeItem('userInfo');
     set({ userInfo: null });
-  }
+  },
 }));
 
 export default useUserStore;

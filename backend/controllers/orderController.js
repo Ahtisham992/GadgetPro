@@ -30,46 +30,44 @@ const sendPush = async (userId, payload) => {
 // @access  Private
 const addOrderItems = asyncHandler(async (req, res) => {
   const {
+    orderItems, shippingAddress, paymentMethod,
+    itemsPrice, taxPrice, shippingPrice, totalPrice,
+    discountAmount, couponCode,
+  } = req.body;
+
+  if (!orderItems || orderItems.length === 0) {
+    res.status(400);
+    throw new Error('No order items');
+  }
+
+  const order = new Order({
     orderItems,
+    user: req.user._id,
     shippingAddress,
     paymentMethod,
     itemsPrice,
     taxPrice,
     shippingPrice,
+    discountAmount: discountAmount || 0,
+    couponCode: couponCode || '',
     totalPrice,
-  } = req.body;
+    // Credit card orders start as paid
+    isPaid: paymentMethod === 'Credit Card',
+    paidAt: paymentMethod === 'Credit Card' ? Date.now() : undefined,
+  });
 
-  if (orderItems && orderItems.length === 0) {
-    res.status(400);
-    throw new Error('No order items');
-  } else {
-    const order = new Order({
-      orderItems,
-      user: req.user._id,
-      shippingAddress,
-      paymentMethod,
-      itemsPrice,
-      taxPrice,
-      shippingPrice,
-      totalPrice,
-      isPaid: paymentMethod === 'Credit Card',
-      paidAt: paymentMethod === 'Credit Card' ? Date.now() : undefined,
-    });
+  const createdOrder = await order.save();
 
-    const createdOrder = await order.save();
-
-    // Decrement inventory stock
-    for (const item of orderItems) {
-      const product = await Product.findById(item.product);
-      if (product) {
-        product.countInStock -= item.qty;
-        if (product.countInStock < 0) product.countInStock = 0;
-        await product.save();
-      }
+  // Decrement inventory stock
+  for (const item of orderItems) {
+    const product = await Product.findById(item.product);
+    if (product) {
+      product.countInStock = Math.max(0, product.countInStock - item.qty);
+      await product.save();
     }
-
-    res.status(201).json(createdOrder);
   }
+
+  res.status(201).json(createdOrder);
 });
 
 // @desc    Get order by ID
@@ -77,13 +75,13 @@ const addOrderItems = asyncHandler(async (req, res) => {
 // @access  Private
 const getOrderById = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate('user', 'name email');
+  if (!order) { res.status(404); throw new Error('Order not found'); }
 
-  if (order) {
-    res.json(order);
-  } else {
-    res.status(404);
-    throw new Error('Order not found');
+  // Only admin or the order owner can view
+  if (!req.user.isAdmin && order.user._id.toString() !== req.user._id.toString()) {
+    res.status(401); throw new Error('Not authorized');
   }
+  res.json(order);
 });
 
 // @desc    Get all orders
@@ -94,28 +92,29 @@ const getOrders = asyncHandler(async (req, res) => {
   res.json(orders);
 });
 
-// @desc    Update order to paid (Cash on Delivery or Admin override)
+// @desc    Update order to paid
 // @route   PUT /api/orders/:id/pay
-// @access  Private/Admin
+// @access  Private (owner or admin)
 const updateOrderToPaid = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
+  if (!order) { res.status(404); throw new Error('Order not found'); }
 
-  if (order) {
-    order.isPaid = true;
-    order.paidAt = Date.now();
-    order.paymentResult = {
-      id: req.body.id || 'CASH_ON_DELIVERY',
-      status: req.body.status || 'PAID',
-      update_time: req.body.update_time || Date.now().toString(),
-      email_address: req.body.email_address || 'admin_override',
-    };
-
-    const updatedOrder = await order.save();
-    res.json(updatedOrder);
-  } else {
-    res.status(404);
-    throw new Error('Order not found');
+  // ✅ FIX: allow order owner OR admin
+  if (!req.user.isAdmin && order.user.toString() !== req.user._id.toString()) {
+    res.status(401); throw new Error('Not authorized');
   }
+
+  order.isPaid = true;
+  order.paidAt = Date.now();
+  order.paymentResult = {
+    id: req.body.id || 'CASH_ON_DELIVERY',
+    status: req.body.status || 'PAID',
+    update_time: req.body.update_time || Date.now().toString(),
+    email_address: req.body.email_address || 'admin_override',
+  };
+
+  const updatedOrder = await order.save();
+  res.json(updatedOrder);
 });
 
 // @desc    Update order to delivered
@@ -123,33 +122,27 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const updateOrderToDelivered = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate('user', 'name email');
-  if (order) {
-    order.isDelivered = true;
-    order.deliveredAt = Date.now();
-    const updatedOrder = await order.save();
-    
-    // Send email notification
-    sendOrderDeliveredEmail(order.user.email, updatedOrder).catch(console.error);
-    
-    // Send Web Push notification
-    sendPush(order.user._id, {
-      title: 'Order Delivered! 🎉',
-      body: `Your order ending in #${order._id.toString().slice(-6).toUpperCase()} has arrived. Enjoy!`,
-      url: '/profile'
-    });
+  if (!order) { res.status(404); throw new Error('Order not found'); }
 
-    res.json(updatedOrder);
-  } else {
-    res.status(404);
-    throw new Error('Order not found');
-  }
+  order.isDelivered = true;
+  order.deliveredAt = Date.now();
+  const updatedOrder = await order.save();
+
+  sendOrderDeliveredEmail(order.user.email, updatedOrder).catch(console.error);
+  sendPush(order.user._id, {
+    title: 'Order Delivered! 🎉',
+    body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has arrived. Enjoy!`,
+    url: '/profile',
+  });
+
+  res.json(updatedOrder);
 });
 
 // @desc    Get logged in user orders
 // @route   GET /api/orders/mine
 // @access  Private
 const getMyOrders = asyncHandler(async (req, res) => {
-  const orders = await Order.find({ user: req.user._id });
+  const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
   res.json(orders);
 });
 
@@ -158,26 +151,20 @@ const getMyOrders = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const acceptOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate('user', 'name email');
-  if (order) {
-    order.isAccepted = true;
-    order.acceptedAt = Date.now();
-    const updatedOrder = await order.save();
-    
-    // Send email notification
-    sendOrderAcceptedEmail(order.user.email, updatedOrder).catch(console.error);
-    
-    // Send Web Push notification
-    sendPush(order.user._id, {
-      title: 'Order Approved ✅',
-      body: `Your order ending in #${order._id.toString().slice(-6).toUpperCase()} is now processing!`,
-      url: '/profile'
-    });
+  if (!order) { res.status(404); throw new Error('Order not found'); }
 
-    res.json(updatedOrder);
-  } else {
-    res.status(404);
-    throw new Error('Order not found');
-  }
+  order.isAccepted = true;
+  order.acceptedAt = Date.now();
+  const updatedOrder = await order.save();
+
+  sendOrderAcceptedEmail(order.user.email, updatedOrder).catch(console.error);
+  sendPush(order.user._id, {
+    title: 'Order Approved ✅',
+    body: `Your order #${order._id.toString().slice(-6).toUpperCase()} is now processing!`,
+    url: '/profile',
+  });
+
+  res.json(updatedOrder);
 });
 
 export { addOrderItems, getOrderById, getOrders, updateOrderToPaid, updateOrderToDelivered, getMyOrders, acceptOrder };
