@@ -56,15 +56,15 @@ const Footer = () => {
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
               <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', color: '#9CA3AF', fontSize: '0.875rem' }}>
                 <MapPin size={14} style={{ marginTop: '3px', flexShrink: 0, color: 'var(--color-primary)' }} />
-                Plot 47, Technology Park, Karachi, Pakistan
+                Plot 47, Technology Park,Islamabad, Pakistan
               </li>
               <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#9CA3AF', fontSize: '0.875rem' }}>
                 <Phone size={14} style={{ flexShrink: 0, color: 'var(--color-primary)' }} />
-                +92 321 000 0000
+                +92 320 5999041
               </li>
               <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#9CA3AF', fontSize: '0.875rem' }}>
                 <Mail size={14} style={{ flexShrink: 0, color: 'var(--color-primary)' }} />
-                hello@gadgetpro.pk
+                muhammad.ahtisham.se@gmail.com
               </li>
             </ul>
           </div>
@@ -73,7 +73,7 @@ const Footer = () => {
         {/* Bottom bar */}
         <div style={{ borderTop: '1px solid #374151', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <p style={{ color: '#6B7280', fontSize: '0.8125rem', margin: 0 }}>
-            © {new Date().getFullYear()} GadgetPro. All rights reserved.
+            © {new Date().getFullYear()} GadgetPro. All rights reserved. Made with ❤️ by Muhammad Ahtisham. 
           </p>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
             {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map(item => (
