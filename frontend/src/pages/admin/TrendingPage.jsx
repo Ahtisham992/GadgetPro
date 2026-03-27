@@ -57,7 +57,7 @@ const TrendingPage = () => {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+      <div className="admin-charts-grid" style={{ marginBottom: '1.5rem' }}>
         {/* Most Wishlisted */}
         <TrendingCard
           title="Most Wishlisted"
@@ -114,7 +114,7 @@ const TrendingPage = () => {
       </div>
 
       {/* Summary cards at the bottom */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem', marginTop: '1.5rem' }}>
+      <div className="admin-stat-grid" style={{ marginTop: '1.5rem' }}>
         {[
           { label: 'Products in Wishlists', value: data.mostWishlisted?.[0]?.count ?? 0, sub: `Top: ${data.mostWishlisted?.[0]?.product?.name?.slice(0, 20) ?? '—'}`, icon: <Heart size={20} style={{ color: '#EF4444' }} /> },
           { label: 'Most Reviewed Product', value: data.mostReviewed?.[0]?.numReviews ?? 0, sub: `"${data.mostReviewed?.[0]?.name?.slice(0, 20) ?? '—'}"`, icon: <Star size={20} style={{ color: '#F59E0B' }} /> },

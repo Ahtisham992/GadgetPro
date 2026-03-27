@@ -37,7 +37,7 @@ const Cart = () => {
     <div className="container fade-in" style={{ padding: '2.5rem 1.5rem' }}>
       <h2 style={{ marginBottom: '2rem' }}>Shopping Cart <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>({cartItems.length} item{cartItems.length > 1 ? 's' : ''})</span></h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '2rem', alignItems: 'start' }}>
+      <div className="sidebar-layout">
         {/* Items */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {cartItems.map(item => (
@@ -47,26 +47,34 @@ const Cart = () => {
               borderRadius: 'var(--radius-xl)',
               padding: '1.25rem',
               display: 'flex',
-              gap: '1.25rem',
+              gap: '1rem',
               alignItems: 'center',
               boxShadow: 'var(--shadow-card)',
+              flexWrap: 'wrap',
             }}>
+              <style>{`
+                @media (max-width: 640px) {
+                  .cart-item-info { flex: 1 1 100% !important; order: 1; }
+                  .cart-item-controls { flex: 1; border: none !important; background: var(--color-surface) !important; }
+                  .cart-item-remove { order: 2; }
+                }
+              `}</style>
               <Link to={`/product/${item.product}`}>
                 <img src={item.image} alt={item.name} style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '12px', background: 'var(--color-bg-alt)', padding: '0.5rem', flexShrink: 0 }} />
               </Link>
 
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="cart-item-info" style={{ flex: 1, minWidth: 0 }}>
                 <Link to={`/product/${item.product}`} style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.9375rem', display: 'block', marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.name}
                 </Link>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>{item.brand}</div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>{item.brand}</div>
                 <div style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '1.0625rem' }}>
                   PKR {(item.price * item.qty).toLocaleString()}
                 </div>
               </div>
 
               {/* Qty Controls */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '0.25rem' }}>
+              <div className="cart-item-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '0.25rem' }}>
                 <button
                   onClick={() => item.qty > 1 ? addToCart(item, item.qty - 1) : removeFromCart(item.product)}
                   style={{ width: '30px', height: '30px', border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', color: 'var(--color-text-muted)', transition: 'background 0.15s' }}
@@ -89,6 +97,7 @@ const Cart = () => {
 
               {/* Remove */}
               <button
+                className="cart-item-remove"
                 onClick={() => removeFromCart(item.product)}
                 style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-light)', padding: '0.5rem', borderRadius: '8px', transition: 'color 0.15s, background 0.15s', display: 'flex' }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-danger-bg)'; e.currentTarget.style.color = 'var(--color-danger)'; }}
@@ -108,7 +117,12 @@ const Cart = () => {
         </div>
 
         {/* Order Summary */}
-        <div style={{ position: 'sticky', top: '90px' }}>
+        <div className="cart-summary" style={{ position: 'relative' }}>
+          <style>{`
+            @media (min-width: 1025px) {
+              .cart-summary { position: sticky !important; top: 90px !important; }
+            }
+          `}</style>
           <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: '1.75rem', boxShadow: 'var(--shadow-md)' }}>
             <h3 style={{ marginBottom: '1.5rem', fontSize: '1.125rem' }}>Order Summary</h3>
 

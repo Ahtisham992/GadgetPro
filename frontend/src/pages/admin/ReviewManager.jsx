@@ -88,7 +88,7 @@ const ReviewManager = () => {
             <div key={product._id} className="card" style={{ overflow: 'hidden' }}>
               {/* Product Header */}
               <div
-                style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', borderBottom: expanded[product._id] ? '1px solid var(--color-border)' : 'none' }}
+                style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', borderBottom: expanded[product._id] ? '1px solid var(--color-border)' : 'none', flexWrap: 'wrap' }}
                 onClick={() => setExpanded(e => ({ ...e, [product._id]: !e[product._id] }))}
               >
                 <img src={product.image} alt={product.name} style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '8px', background: 'var(--color-bg-alt)', padding: '4px', flexShrink: 0 }} />
@@ -105,7 +105,7 @@ const ReviewManager = () => {
                   {product.reviews.map((review, i) => (
                     <div key={review._id} style={{ padding: '1.25rem', borderBottom: i < product.reviews.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
                       {/* Review Header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                             <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{review.name}</span>
@@ -119,7 +119,7 @@ const ReviewManager = () => {
                         </div>
                         <button
                           onClick={() => handleDelete(product._id, review._id)}
-                          style={{ background: 'none', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '0.375rem 0.5rem', cursor: 'pointer', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', transition: 'all 0.15s' }}
+                          style={{ background: 'none', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '0.375rem 0.5rem', cursor: 'pointer', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', transition: 'all 0.15s', height: 'fit-content' }}
                           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-danger-bg)'; e.currentTarget.style.borderColor = 'var(--color-danger)'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
                         >
@@ -140,7 +140,13 @@ const ReviewManager = () => {
                       )}
 
                       {/* Reply Input */}
-                      <div style={{ display: 'flex', gap: '0.625rem' }}>
+                      <div className="admin-reply-input" style={{ display: 'flex', gap: '0.625rem' }}>
+                        <style>{`
+                          @media (max-width: 480px) {
+                            .admin-reply-input { flex-direction: column; }
+                            .admin-reply-input button { width: 100%; }
+                          }
+                        `}</style>
                         <textarea
                           placeholder={review.adminReply ? 'Update your reply...' : 'Write an official reply...'}
                           value={replyTexts[review._id] || ''}

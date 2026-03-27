@@ -107,11 +107,11 @@ const OrderList = () => {
         ))}
       </div>
 
-      <div className="card" style={{ overflowX: 'auto' }}>
+      <div className="admin-table-container">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-alt)' }}>
-              <th style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>ORDER ID</th>
+              <th className="mobile-hide" style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>ORDER ID</th>
               <th style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>CUSTOMER</th>
               <th style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>DATE</th>
               <th style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>TOTAL</th>
@@ -127,7 +127,7 @@ const OrderList = () => {
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg-alt)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                  <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                  <td className="mobile-hide" style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
                     #{order._id.slice(-8).toUpperCase()}
                   </td>
                   <td style={{ padding: '1rem', fontWeight: 600 }}>{order.user?.name || '—'}</td>

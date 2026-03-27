@@ -1,54 +1,39 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useUserStore from '../store/userStore';
-import { ShieldCheck, ArrowLeft, RefreshCw } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, RefreshCw, Eye, EyeOff } from 'lucide-react';
 
-/* ─── Google button (same pattern as Login) ─── */
+/* ─── Google button ─── */
 const GoogleSignInButton = ({ onSuccess, onError }) => {
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) return;
-
     if (!document.getElementById('gsi-script')) {
       const script = document.createElement('script');
       script.id = 'gsi-script';
       script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
+      script.async = true; script.defer = true;
       document.head.appendChild(script);
     }
-
     const init = () => {
       if (!window.google) return;
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: async ({ credential }) => {
           try {
-            const res = await fetch('/api/users/google', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ credential }),
-            });
+            const res = await fetch('/api/users/google', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential }) });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Google sign-in failed');
             onSuccess(data);
-          } catch (err) {
-            onError(err.message);
-          }
+          } catch (err) { onError(err.message); }
         },
       });
-      window.google.accounts.id.renderButton(
-        document.getElementById('google-btn-register'),
-        { theme: 'outline', size: 'large', width: 360, logo_alignment: 'center' }
-      );
+      window.google.accounts.id.renderButton(document.getElementById('google-btn-register'), { theme: 'outline', size: 'large', width: 360, logo_alignment: 'center' });
     };
-
     const interval = setInterval(() => { if (window.google) { init(); clearInterval(interval); } }, 200);
     return () => clearInterval(interval);
   }, [onSuccess, onError]);
-
   if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) return null;
-
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.25rem 0', color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
@@ -61,13 +46,14 @@ const GoogleSignInButton = ({ onSuccess, onError }) => {
   );
 };
 
-/* ─── Register page ─── */
 const Register = () => {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -83,11 +69,7 @@ const Register = () => {
     if (password.length < 6) return setError('Password must be at least 6 characters');
     setLoading(true); setError('');
     try {
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
+      const res = await fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Registration failed');
       setSuccess('A 6-digit verification code has been sent to your inbox!');
@@ -101,11 +83,7 @@ const Register = () => {
     if (otp.length !== 6) return setError('Please enter the full 6-digit code');
     setLoading(true); setError('');
     try {
-      const res = await fetch('/api/users/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
-      });
+      const res = await fetch('/api/users/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Verification failed');
       login(data);
@@ -117,11 +95,7 @@ const Register = () => {
   const resendOtp = async () => {
     setResending(true); setError('');
     try {
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
+      const res = await fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Could not resend OTP');
       setSuccess('New code sent! Check your inbox.');
@@ -129,19 +103,11 @@ const Register = () => {
     finally { setResending(false); }
   };
 
-  const handleGoogleSuccess = useCallback((data) => {
-    login(data);
-    navigate('/');
-  }, [login, navigate]);
-
+  const handleGoogleSuccess = useCallback((data) => { login(data); navigate('/'); }, [login, navigate]);
   const handleGoogleError = useCallback((msg) => setError(msg), []);
 
   const DarkPanel = () => (
-    <div style={{
-      background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '3rem', position: 'relative', overflow: 'hidden', order: -1,
-    }}>
+    <div className="auth-dark-panel" style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: '10%', left: '-60px', width: '280px', height: '280px', background: 'radial-gradient(circle, rgba(249,115,22,0.12), transparent 70%)', borderRadius: '50%' }} />
       <div style={{ textAlign: 'center', zIndex: 1 }}>
         <div style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>{step === 1 ? '🚀' : '📬'}</div>
@@ -149,9 +115,7 @@ const Register = () => {
           {step === 1 ? <>Join 10,000+<br />Happy Shoppers</> : <>Check Your<br />Email</>}
         </h2>
         <p style={{ color: '#94A3B8', fontSize: '0.9375rem', lineHeight: 1.7, maxWidth: '300px', margin: '0 auto 2rem' }}>
-          {step === 1
-            ? "Create your free account and start exploring Pakistan's largest premium gadget store."
-            : `We sent a 6-digit code to ${email}. Enter it to verify your identity.`}
+          {step === 1 ? "Create your free account and start exploring Pakistan's largest premium gadget store." : `We sent a 6-digit code to ${email}. Enter it to verify your identity.`}
         </p>
         {step === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: '280px', margin: '0 auto' }}>
@@ -165,7 +129,7 @@ const Register = () => {
   );
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 'calc(100vh - 120px)' }}>
+    <div className="auth-page-grid">
       <DarkPanel />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem 2rem', background: 'var(--color-surface)' }}>
         <div style={{ width: '100%', maxWidth: '400px' }} className="fade-in">
@@ -181,30 +145,49 @@ const Register = () => {
               <form onSubmit={submitHandler}>
                 <div className="form-group">
                   <label className="form-label">Full name</label>
-                  <input type="text" className="form-control" placeholder="John Smith"
-                    value={name} onChange={e => setName(e.target.value)} required />
+                  <input type="text" className="form-control" placeholder="John Smith" value={name} onChange={e => setName(e.target.value)} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Email address</label>
-                  <input type="email" className="form-control" placeholder="you@example.com"
-                    value={email} onChange={e => setEmail(e.target.value)} required />
+                  <input type="email" className="form-control" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Password</label>
-                  <input type="password" className="form-control" placeholder="Min 6 characters"
-                    value={password} onChange={e => setPassword(e.target.value)} required />
+                  <div className="password-input-wrap">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className="form-control"
+                      placeholder="Min 6 characters"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      required
+                    />
+                    <button type="button" className="password-toggle-btn" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Confirm password</label>
-                  <input type="password" className="form-control" placeholder="••••••••"
-                    value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                  <div className="password-input-wrap">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className="form-control"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                    <button type="button" className="password-toggle-btn" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1}>
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading} style={{ marginTop: '0.5rem' }}>
                   {loading ? 'Sending Code...' : 'Continue'}
                 </button>
               </form>
 
-              {/* Google Sign-Up */}
               <GoogleSignInButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
 
               <p style={{ textAlign: 'center', marginTop: '1.75rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
@@ -234,23 +217,21 @@ const Register = () => {
               <form onSubmit={verifyHandler}>
                 <div className="form-group">
                   <label className="form-label">Verification code</label>
-                  <input type="text" className="form-control" placeholder="123456" value={otp}
+                  <input
+                    type="text" className="form-control" placeholder="123456" value={otp}
                     onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     maxLength={6} style={{ textAlign: 'center', fontSize: '1.75rem', fontWeight: 800, letterSpacing: '0.35em' }}
-                    required autoFocus />
-                  <div style={{ textAlign: 'right', marginTop: '0.5rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                    Expires in 10 minutes
-                  </div>
+                    required autoFocus
+                  />
+                  <div style={{ textAlign: 'right', marginTop: '0.5rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>Expires in 10 minutes</div>
                 </div>
-                <button type="submit" className="btn btn-primary btn-block btn-lg"
-                  disabled={loading || otp.length !== 6} style={{ marginTop: '0.5rem' }}>
+                <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading || otp.length !== 6} style={{ marginTop: '0.5rem' }}>
                   {loading ? 'Verifying...' : 'Verify & Create Account'}
                 </button>
               </form>
               <div style={{ textAlign: 'center', marginTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
                 Didn&apos;t get a code?{' '}
-                <button onClick={resendOtp} disabled={resending}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 700, fontFamily: 'inherit', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.25rem', padding: 0 }}>
+                <button onClick={resendOtp} disabled={resending} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 700, fontFamily: 'inherit', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.25rem', padding: 0 }}>
                   {resending ? <><RefreshCw size={12} /> Sending...</> : 'Resend'}
                 </button>
               </div>

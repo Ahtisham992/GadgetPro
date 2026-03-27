@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import ScrollToTop from './components/ScrollToTop';   // ← Fix #4
+import ScrollToTop from './components/ScrollToTop';
 import PublicLayout from './components/PublicLayout';
 import AdminLayout from './components/AdminLayout';
 
@@ -8,6 +8,8 @@ import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import CategoryPage from './pages/CategoryPage';
@@ -30,7 +32,7 @@ function App() {
 
   return (
     <Router>
-      <ScrollToTop />   {/* ← scrolls to top on every route change */}
+      <ScrollToTop />
       <Routes>
         {/* Public Storefront */}
         <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
@@ -38,6 +40,8 @@ function App() {
         <Route path="/cart" element={<PublicLayout><Cart /></PublicLayout>} />
         <Route path="/login" element={<PublicLayout><Login /></PublicLayout>} />
         <Route path="/register" element={<PublicLayout><Register /></PublicLayout>} />
+        <Route path="/forgot-password" element={<PublicLayout><ForgotPassword /></PublicLayout>} />
+        <Route path="/reset-password/:token" element={<PublicLayout><ResetPassword /></PublicLayout>} />
         <Route path="/checkout" element={<PublicLayout><Checkout /></PublicLayout>} />
         <Route path="/profile" element={<PublicLayout><Profile /></PublicLayout>} />
         <Route path="/category/:cat" element={<PublicLayout><CategoryPage /></PublicLayout>} />

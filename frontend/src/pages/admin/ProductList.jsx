@@ -81,27 +81,27 @@ const ProductList = () => {
 
   return (
     <div className="fade-in">
-      <div className="flex justify-between items-center" style={{ marginBottom: '2rem' }}>
-        <h2>Product Inventory Master</h2>
-        <div className="flex gap-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
+        <h2 style={{ margin: 0 }}>Product Inventory Master</h2>
+        <div className="mobile-stack-sm mobile-full-width" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <input 
             type="text" 
             placeholder="Search products..." 
-            className="form-control" 
+            className="form-control mobile-full-width" 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ width: '250px' }}
+            style={{ width: '220px' }}
           />
-          <button className="btn btn-primary" onClick={createHandler}>
+          <button className="btn btn-primary mobile-full-width" onClick={createHandler} style={{ whiteSpace: 'nowrap' }}>
              + Create Product
           </button>
         </div>
       </div>
-      <div className="card" style={{ overflowX: 'auto' }}>
+      <div className="admin-table-container">
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-              <th style={{ padding: '1rem' }}>ID</th>
+              <th className="mobile-hide" style={{ padding: '1rem' }}>ID</th>
               <th style={{ padding: '1rem' }}>NAME</th>
               <th style={{ padding: '1rem' }}>PRICE</th>
               <th style={{ padding: '1rem' }}>CATEGORY</th>
@@ -113,7 +113,7 @@ const ProductList = () => {
           <tbody>
             {filteredProducts.map((product) => (
               <tr key={product._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td style={{ padding: '1rem', color: 'var(--color-text-muted)' }}>{product._id.substring(0, 8)}...</td>
+                <td className="mobile-hide" style={{ padding: '1rem', color: 'var(--color-text-muted)' }}>{product._id.substring(0, 8)}...</td>
                 <td style={{ padding: '1rem' }}>{product.name}</td>
                 <td style={{ padding: '1rem' }}>PKR {product.price.toLocaleString()}</td>
                 <td style={{ padding: '1rem' }}>{product.category}</td>

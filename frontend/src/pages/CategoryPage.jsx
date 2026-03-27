@@ -27,7 +27,13 @@ const CategoryPage = () => {
   }, [cat]);
 
   return (
-    <div className="container fade-in" style={{ padding: '2.5rem 1.5rem' }}>
+    <div className="container fade-in" style={{ padding: '1.5rem 1rem' }}>
+      <style>{`
+        @media (min-width: 641px) {
+          .category-container { padding: 2.5rem 1.5rem !important; }
+        }
+      `}</style>
+      <div className="category-container">
       {/* Breadcrumb */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '2rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
         <Link to="/" style={{ color: 'var(--color-text-muted)', transition: 'color 0.15s' }}
@@ -48,7 +54,7 @@ const CategoryPage = () => {
 
       {/* Products Grid */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+        <div className="grid grid-cols-4 grid-cols-2-sm">
           {Array(8).fill(0).map((_, i) => (
             <div key={i} className="skeleton" style={{ height: '320px', borderRadius: '16px' }} />
           ))}
@@ -61,12 +67,13 @@ const CategoryPage = () => {
           <Link to="/"><button className="btn btn-primary">Browse All Products</button></Link>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+        <div className="grid grid-cols-4 grid-cols-2-sm">
           {products.map(p => <ProductCard key={p._id} product={p} />)}
         </div>
       )}
     </div>
-  );
+  </div>
+);
 };
 
 export default CategoryPage;

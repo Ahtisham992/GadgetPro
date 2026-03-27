@@ -134,7 +134,7 @@ const DashboardOverview = () => {
   return (
     <div className="fade-in">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Dashboard Overview</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
@@ -153,7 +153,7 @@ const DashboardOverview = () => {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '2rem' }}>
+      <div className="admin-stat-grid">
         <StatCard label="Total Revenue" value={`PKR ${revenue.toLocaleString()}`} subtext="From paid orders" accent={CHART_COLORS.primary} />
         <StatCard label="Total Orders" value={orders.length} subtext={`${pendingOrders} pending`} accent={CHART_COLORS.info} />
         <StatCard label="Delivered" value={completedOrders} subtext="Completed orders" accent={CHART_COLORS.success} />
@@ -163,19 +163,25 @@ const DashboardOverview = () => {
       {/* Revenue Line Chart */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
         <div style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.9375rem' }}>Revenue — Last 7 Days</div>
-        <Line data={lineData} options={chartOptions} height={80} />
+        <div style={{ position: 'relative', height: '300px' }}>
+          <Line data={lineData} options={{ ...chartOptions, maintainAspectRatio: false }} />
+        </div>
       </div>
 
       {/* Doughnut + Bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+      <div className="admin-charts-grid">
         <div className="card" style={{ padding: '1.5rem' }}>
-          <div style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.9375rem' }}>Orders by Status</div>
-          <Doughnut data={doughnutData} options={{ responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '65%' }} />
+          <div style={{ fontWeight: 700, marginBottom: '1.5rem', fontSize: '0.9375rem' }}>Orders by Status</div>
+          <div style={{ position: 'relative', height: '240px' }}>
+            <Doughnut data={doughnutData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }, cutout: '70%' }} />
+          </div>
         </div>
         <div className="card" style={{ padding: '1.5rem' }}>
           <div style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.9375rem' }}>Top 5 Products by Units Sold</div>
           {topProducts.length > 0
-            ? <Bar data={barData} options={{ ...chartOptions, plugins: { legend: { display: false } } }} height={140} />
+            ? <div style={{ position: 'relative', height: '240px' }}>
+                <Bar data={barData} options={{ ...chartOptions, maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+              </div>
             : <div style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '3rem' }}>No order data yet</div>
           }
         </div>

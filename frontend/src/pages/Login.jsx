@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import useUserStore from '../store/userStore';
 
 /* ─── tiny Google button component ─── */
 const GoogleSignInButton = ({ onSuccess, onError }) => {
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) return; // skip if not configured
+    if (!clientId) return;
 
-    // Load the GSI script once
     if (!document.getElementById('gsi-script')) {
       const script = document.createElement('script');
       script.id = 'gsi-script';
@@ -32,9 +32,7 @@ const GoogleSignInButton = ({ onSuccess, onError }) => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Google sign-in failed');
             onSuccess(data);
-          } catch (err) {
-            onError(err.message);
-          }
+          } catch (err) { onError(err.message); }
         },
       });
       window.google.accounts.id.renderButton(
@@ -43,7 +41,6 @@ const GoogleSignInButton = ({ onSuccess, onError }) => {
       );
     };
 
-    // Wait for script to load
     const interval = setInterval(() => { if (window.google) { init(); clearInterval(interval); } }, 200);
     return () => clearInterval(interval);
   }, [onSuccess, onError]);
@@ -66,6 +63,7 @@ const GoogleSignInButton = ({ onSuccess, onError }) => {
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -101,7 +99,7 @@ const Login = () => {
   const handleGoogleError = useCallback((msg) => setError(msg), []);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 'calc(100vh - 120px)' }}>
+    <div className="auth-page-grid">
       {/* Left: Form */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem 2rem', background: 'var(--color-surface)' }}>
         <div style={{ width: '100%', maxWidth: '400px' }} className="fade-in">
@@ -115,13 +113,42 @@ const Login = () => {
           <form onSubmit={submitHandler}>
             <div className="form-group">
               <label className="form-label">Email address</label>
-              <input type="email" className="form-control" placeholder="you@example.com"
-                value={email} onChange={e => setEmail(e.target.value)} required />
+              <input
+                type="email"
+                className="form-control"
+                placeholder="you@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
             </div>
+
             <div className="form-group">
-              <label className="form-label">Password</label>
-              <input type="password" className="form-control" placeholder="••••••••"
-                value={password} onChange={e => setPassword(e.target.value)} required />
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Password</span>
+                <Link to="/forgot-password" style={{ fontSize: '0.8125rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                  Forgot password?
+                </Link>
+              </label>
+              <div className="password-input-wrap">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="form-control"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading} style={{ marginTop: '0.5rem' }}>
@@ -129,7 +156,6 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Google Sign-In */}
           <GoogleSignInButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
 
           <p style={{ textAlign: 'center', marginTop: '1.75rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
@@ -140,7 +166,7 @@ const Login = () => {
       </div>
 
       {/* Right: Panel */}
-      <div style={{
+      <div className="auth-dark-panel" style={{
         background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '3rem', position: 'relative', overflow: 'hidden',

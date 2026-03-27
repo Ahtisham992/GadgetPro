@@ -1,8 +1,9 @@
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
 import bcrypt from 'bcryptjs';
-import { sendOtpEmail } from '../utils/emailService.js';
+import { sendOtpEmail, sendPasswordResetEmail } from '../utils/emailService.js';
 import asyncHandler from 'express-async-handler';
+import crypto from 'crypto';
 
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -182,4 +183,67 @@ const getUserProfile = asyncHandler(async (req, res) => {
   });
 });
 
-export { authUser, registerUser, verifyOtp, googleAuth, addAddress, deleteAddress, getUserProfile };
+// @desc    Change password
+// @route   PUT /api/users/change-password
+// @access  Private
+const changePassword = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) { res.status(404); throw new Error('User not found'); }
+
+  const { currentPassword, newPassword } = req.body;
+  if (!(await user.matchPassword(currentPassword))) {
+    res.status(401); throw new Error('Current password is incorrect');
+  }
+
+  user.password = newPassword;
+  await user.save();
+  res.json({ message: 'Password changed successfully' });
+});
+
+// @desc    Forgot password — send reset link/token
+// @route   POST /api/users/forgot-password
+// @access  Public
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) { res.status(404); throw new Error('No account found with that email'); }
+
+  // Generate reset token
+  const resetToken = crypto.randomBytes(20).toString('hex');
+  user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 mins
+
+  await user.save();
+
+  // Send the actual reset email
+  console.log(`[Auth] Triggering password reset email for: ${user.email}`);
+  await sendPasswordResetEmail(user.email, resetToken, user.name);
+  
+  res.json({ message: 'Email sent with password reset instructions' });
+});
+
+// @desc    Reset password using token
+// @route   POST /api/users/reset-password/:token
+// @access  Public
+const resetPassword = asyncHandler(async (req, res) => {
+  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+  const user = await User.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpire: { $gt: Date.now() }
+  });
+
+  if (!user) { res.status(400); throw new Error('Invalid or expired reset token'); }
+
+  user.password = req.body.password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  res.json({ message: 'Password reset successful' });
+});
+
+export { 
+  authUser, registerUser, verifyOtp, googleAuth, 
+  addAddress, deleteAddress, getUserProfile,
+  changePassword, forgotPassword, resetPassword
+};

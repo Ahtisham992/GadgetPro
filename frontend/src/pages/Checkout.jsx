@@ -129,7 +129,7 @@ const Checkout = () => {
     <div className="container fade-in" style={{ padding: '2.5rem 1.5rem' }}>
       <h2 style={{ marginBottom: '2rem' }}>Checkout</h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '2rem', alignItems: 'start' }}>
+      <div className="sidebar-layout">
         {/* Form */}
         <form onSubmit={placeOrderHandler}>
           {error && <div className="alert alert-danger" style={{ marginBottom: '1.5rem' }}>{error}</div>}
@@ -174,7 +174,7 @@ const Checkout = () => {
               <label className="form-label">Phone Number (with Country Code)</label>
               <input type="tel" className="form-control" placeholder="+92 300 1234567" value={phone} onChange={e => setPhone(e.target.value)} required />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">City</label>
                 <input type="text" className="form-control" placeholder="Karachi" value={city} onChange={e => setCity(e.target.value)} required />
@@ -210,7 +210,7 @@ const Checkout = () => {
               <h3 style={{ margin: 0, fontSize: '1.0625rem' }}>Payment Method</h3>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
               {['Credit Card', 'Cash On Delivery'].map(method => (
                 <label key={method} style={{
                   flex: 1, border: `2px solid ${paymentMethod === method ? 'var(--color-primary)' : 'var(--color-border)'}`,
@@ -232,7 +232,7 @@ const Checkout = () => {
                   <label className="form-label">Card Number</label>
                   <input type="text" className="form-control" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={e => setCardNumber(e.target.value)} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Expiry (MM/YY)</label>
                     <input type="text" className="form-control" placeholder="12/27" value={expiry} onChange={e => setExpiry(e.target.value)} />
@@ -252,7 +252,12 @@ const Checkout = () => {
         </form>
 
         {/* Summary */}
-        <div style={{ position: 'sticky', top: '90px' }}>
+        <div className="checkout-summary" style={{ position: 'relative' }}>
+          <style>{`
+            @media (min-width: 1025px) {
+              .checkout-summary { position: sticky !important; top: 90px !important; }
+            }
+          `}</style>
           <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: '1.75rem', boxShadow: 'var(--shadow-md)' }}>
             <h3 style={{ marginBottom: '1.375rem', fontSize: '1.0625rem' }}>Order Summary</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>

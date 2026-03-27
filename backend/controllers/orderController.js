@@ -4,6 +4,7 @@ import PushSubscription from '../models/PushSubscription.js';
 import { sendOrderAcceptedEmail, sendOrderDeliveredEmail } from '../utils/emailService.js';
 import { webpush } from '../utils/webPush.js';
 import asyncHandler from 'express-async-handler';
+import Coupon from '../models/Coupon.js';
 
 const sendPush = async (userId, payload) => {
   try {
@@ -65,6 +66,14 @@ const addOrderItems = asyncHandler(async (req, res) => {
       product.countInStock = Math.max(0, product.countInStock - item.qty);
       await product.save();
     }
+  }
+
+  // Increment coupon usage if applied
+  if (couponCode) {
+    await Coupon.findOneAndUpdate(
+      { code: couponCode.toUpperCase() },
+      { $inc: { usedCount: 1 } }
+    );
   }
 
   res.status(201).json(createdOrder);

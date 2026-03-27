@@ -39,7 +39,7 @@ const WishlistPage = () => {
           <Link to="/login"><button className="btn btn-primary">Sign In</button></Link>
         </div>
       ) : loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+        <div className="grid grid-cols-4 grid-cols-2-sm">
           {Array(4).fill(0).map((_, i) => <div key={i} className="skeleton" style={{ height: '320px', borderRadius: '16px' }} />)}
         </div>
       ) : products.length === 0 ? (
@@ -50,7 +50,7 @@ const WishlistPage = () => {
           <Link to="/"><button className="btn btn-primary">Browse Products</button></Link>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+        <div className="grid grid-cols-4 grid-cols-2-sm">
           {products.map(p => <ProductCard key={p._id} product={p} onWishlistChange={fetchWishlist} />)}
         </div>
       )}

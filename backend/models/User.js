@@ -17,6 +17,8 @@ const userSchema = mongoose.Schema({
     country: { type: String },
     phone: { type: String },
   }],
+  resetPasswordToken: { type: String },
+  resetPasswordExpire: { type: Date },
 }, { timestamps: true });
 
 userSchema.methods.matchPassword = async function(enteredPassword) {
