@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Star, Heart } from 'lucide-react';
+import { ShoppingCart, Star, Heart, Columns, Bell } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import useUserStore from '../store/userStore';
 import useCompareStore from '../store/compareStore';
 import { useToast } from '../context/ToastContext';
-import { Columns } from 'lucide-react';
 
 const ProductCard = ({ product, onWishlistChange }) => {
   const addToCart = useCartStore((state) => state.addToCart);
@@ -110,10 +109,16 @@ const ProductCard = ({ product, onWishlistChange }) => {
         <Heart size={16} style={{ color: wishlisted ? '#EF4444' : '#9CA3AF', fill: wishlisted ? '#EF4444' : 'none', transition: 'all 0.15s' }} />
       </button>
 
-      <Link to={`/product/${product._id}`} style={{ display: 'block' }}>
+      <div style={{ display: 'block' }}>
         <div className="product-card-img-wrap">
-          <img src={product.image} alt={product.name} className="product-card-img" />
-          {!isOutOfStock && (
+          <Link to={`/product/${product._id}`} style={{ display: 'block', width: '100%', height: '100%' }}>
+            <img src={product.image} alt={product.name} className="product-card-img" />
+          </Link>
+          {isOutOfStock ? (
+            <Link to={`/product/${product._id}`} className="btn product-card-add-btn" style={{ background: '#4b5563', color: '#fff', fontSize: '0.75rem', padding: '0.5rem 0.75rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <Bell size={14} /> Notify Me
+            </Link>
+          ) : (
             <button
               className="btn btn-primary product-card-add-btn"
               onClick={handleAddToCart}
@@ -123,7 +128,7 @@ const ProductCard = ({ product, onWishlistChange }) => {
             </button>
           )}
         </div>
-      </Link>
+      </div>
 
       <div className="product-card-body">
         <div className="product-card-brand">{product.brand}</div>

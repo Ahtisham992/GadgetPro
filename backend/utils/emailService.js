@@ -105,3 +105,26 @@ export const sendPasswordResetEmail = (email, resetToken, name = 'there') => {
     `,
   });
 };
+
+export const sendBackInStockEmail = (email, product, name = 'there') => {
+  const productUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/product/${product._id}`;
+  return sendEmail({
+    to: email,
+    subject: `🔔 Good News! ${product.name} is Back in Stock`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:auto;padding:32px;background:#f9fafb;border-radius:12px">
+        <h2 style="color:#f97316">GadgetPro 🛒</h2>
+        <h3>Hi ${name}, it's back!</h3>
+        <p>The product you were waiting for, <strong>${product.name}</strong>, is now back in stock and ready to ship.</p>
+        <div style="text-align:center;margin:32px 0">
+          <img src="${product.image}" alt="${product.name}" style="max-width:200px;border-radius:8px;margin-bottom:16px" />
+          <br/>
+          <a href="${productUrl}" style="background:#f97316;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block">Buy Now</a>
+        </div>
+        <p style="color:#6b7280;font-size:0.875rem;text-align:center">Act fast before it sells out again!</p>
+        <hr/>
+        <p style="color:#9ca3af;font-size:12px">GadgetPro — Premium Tech Store</p>
+      </div>
+    `,
+  });
+};

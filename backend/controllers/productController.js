@@ -1,7 +1,9 @@
 import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import Wishlist from '../models/Wishlist.js';
+import ProductNotification from '../models/ProductNotification.js';
 import asyncHandler from 'express-async-handler';
+import { sendBackInStockEmail } from '../utils/emailService.js';
 
 // @desc    Fetch all products (with optional search + pagination)
 // @route   GET /api/products?keyword=&page=1&limit=12
@@ -120,10 +122,23 @@ const updateProduct = asyncHandler(async (req, res) => {
     product.image = image !== undefined ? image : product.image;
     product.brand = brand !== undefined ? brand : product.brand;
     product.category = category !== undefined ? category : product.category;
+    const oldStock = product.countInStock;
     product.countInStock = countInStock !== undefined ? countInStock : product.countInStock;
     product.specs = specs !== undefined ? specs : product.specs;
 
     const updatedProduct = await product.save();
+
+    // Check for restock and notify users
+    if (oldStock === 0 && updatedProduct.countInStock > 0) {
+      const notifications = await ProductNotification.find({ product: updatedProduct._id }).populate('user');
+      for (const note of notifications) {
+        if (note.user && note.user.email) {
+          await sendBackInStockEmail(note.user.email, updatedProduct, note.user.name);
+        }
+      }
+      await ProductNotification.deleteMany({ product: updatedProduct._id });
+    }
+
     res.json(updatedProduct);
   } else {
     res.status(404);
@@ -249,4 +264,33 @@ const getTrendingStats = asyncHandler(async (req, res) => {
   res.json({ mostWishlisted: wishlistAgg, mostReviewed, mostOrdered: orderedAgg });
 });
 
-export { getProducts, getProductById, deleteProduct, createProduct, updateProduct, createProductReview, replyToReview, deleteReview, getTrendingStats };
+// @desc    Subscribe to back-in-stock notification
+// @route   POST /api/products/:id/notify
+// @access  Private
+const subscribeToProduct = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (product) {
+    if (product.countInStock > 0) {
+      res.status(400);
+      throw new Error('Product is already in stock');
+    }
+    const alreadySubscribed = await ProductNotification.findOne({
+      user: req.user._id,
+      product: product._id,
+    });
+    if (alreadySubscribed) {
+      res.status(400);
+      throw new Error('You are already subscribed to notifications for this product');
+    }
+    await ProductNotification.create({
+      user: req.user._id,
+      product: product._id,
+    });
+    res.status(201).json({ message: 'Notification subscription successful' });
+  } else {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+});
+
+export { getProducts, getProductById, deleteProduct, createProduct, updateProduct, createProductReview, replyToReview, deleteReview, getTrendingStats, subscribeToProduct };

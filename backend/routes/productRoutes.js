@@ -2,7 +2,8 @@ import express from 'express';
 const router = express.Router();
 import {
   getProducts, getProductById, deleteProduct, createProduct, updateProduct,
-  createProductReview, replyToReview, deleteReview, getTrendingStats
+  createProductReview, replyToReview, deleteReview, getTrendingStats,
+  subscribeToProduct
 } from '../controllers/productController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -22,5 +23,7 @@ router.route('/:id')
   .get(getProductById)
   .put(protect, admin, updateProduct)
   .delete(protect, admin, deleteProduct);
+
+router.post('/:id/subscribe', protect, subscribeToProduct);
 
 export default router;

@@ -1,18 +1,51 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../store/cartStore';
-import { ShoppingCart, ChevronRight, Plus, Minus, Star } from 'lucide-react';
+import useUserStore from '../store/userStore';
+import { useToast } from '../context/ToastContext';
+import { ShoppingCart, ChevronRight, Plus, Minus, Star, Bell } from 'lucide-react';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const userInfo = useUserStore(s => s.userInfo);
+  const toast = useToast();
   const [product, setProduct] = useState(null);
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState('');
 
   const addToCart = useCartStore(s => s.addToCart);
+
+  const subscribeHandler = async () => {
+    if (!userInfo) {
+      toast('Please login to subscribe to notifications', 'info');
+      navigate('/login');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/products/${id}/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast('We will notify you when this item is back in stock!', 'success');
+      } else {
+        toast(data.message || 'Error subscribing', 'error');
+      }
+    } catch {
+      toast('Network error', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -182,15 +215,26 @@ const ProductDetail = () => {
             )}
 
             {/* CTA */}
-            <button
-              className="btn btn-primary btn-lg"
-              onClick={addToCartHandler}
-              disabled={isOutOfStock}
-              style={{ gap: '0.625rem' }}
-            >
-              <ShoppingCart size={18} />
-              {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-            </button>
+            {isOutOfStock ? (
+              <button
+                className="btn btn-primary btn-lg"
+                onClick={subscribeHandler}
+                disabled={submitting}
+                style={{ gap: '0.625rem', background: '#4b5563', borderColor: '#4b5563' }}
+              >
+                <Bell size={18} />
+                {submitting ? 'Subscribing...' : 'Notify Me When in Stock'}
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary btn-lg"
+                onClick={addToCartHandler}
+                style={{ gap: '0.625rem' }}
+              >
+                <ShoppingCart size={18} />
+                Add to Cart
+              </button>
+            )}
           </div>
         </div>
 
