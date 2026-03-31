@@ -199,6 +199,7 @@ const ProductDetail = () => {
           <div className="tabs" style={{ padding: '0 1.5rem', margin: 0, borderRadius: 0 }}>
             {[
               { key: 'description', label: 'Description' },
+              { key: 'specs', label: 'Specifications' },
               { key: 'reviews', label: `Reviews (${product.numReviews || 0})` },
             ].map(tab => (
               <button
@@ -214,7 +215,34 @@ const ProductDetail = () => {
           <div style={{ padding: '2rem' }}>
             {activeTab === 'description' && (
               <div className="fade-in">
-                <p style={{ fontSize: '1rem', lineHeight: 1.8, color: 'var(--color-text-muted)' }}>{product.description}</p>
+                <h3 style={{ fontSize: '1.25rem', marginBottom: '1.25rem', color: 'var(--color-text)' }}>Product Overview</h3>
+                <p style={{ fontSize: '1rem', lineHeight: 1.8, color: 'var(--color-text-muted)', whiteSpace: 'pre-line' }}>{product.description}</p>
+              </div>
+            )}
+
+            {activeTab === 'specs' && (
+              <div className="fade-in">
+                <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--color-text)' }}>Technical Specifications</h3>
+                <div style={{ display: 'grid', gap: '1px', background: 'var(--color-border)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                  {[
+                    { label: 'Brand', value: product.brand },
+                    { label: 'Category', value: product.category },
+                    { label: 'Processor', value: product.specs?.processor },
+                    { label: 'RAM', value: product.specs?.ram },
+                    { label: 'Storage', value: product.specs?.storage },
+                    { label: 'Screen', value: product.specs?.screen },
+                  ].filter(s => s.value).map((s, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '200px 1fr', background: i % 2 === 0 ? 'var(--color-surface)' : 'var(--color-bg-alt)' }}>
+                      <div style={{ padding: '1rem 1.5rem', fontWeight: 700, color: 'var(--color-text)', borderRight: '1px solid var(--color-border)', fontSize: '0.9375rem' }}>{s.label}</div>
+                      <div style={{ padding: '1rem 1.5rem', color: 'var(--color-text-muted)', fontSize: '0.9375rem' }}>{s.value}</div>
+                    </div>
+                  ))}
+                  {(!product.specs || Object.values(product.specs).every(v => !v)) && (
+                    <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--color-surface)', color: 'var(--color-text-muted)' }}>
+                      No detailed specifications available for this product.
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

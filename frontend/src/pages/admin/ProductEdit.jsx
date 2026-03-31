@@ -15,6 +15,10 @@ const ProductEdit = () => {
   const [category, setCategory] = useState('');
   const [countInStock, setCountInStock] = useState(0);
   const [description, setDescription] = useState('');
+  const [ram, setRam] = useState('');
+  const [processor, setProcessor] = useState('');
+  const [storage, setStorage] = useState('');
+  const [screen, setScreen] = useState('');
   const [loadingUpload, setLoadingUpload] = useState(false);
   
   const [loading, setLoading] = useState(isEditMode);
@@ -32,6 +36,12 @@ const ProductEdit = () => {
         setCategory(data.category);
         setCountInStock(data.countInStock);
         setDescription(data.description);
+        if (data.specs) {
+          setRam(data.specs.ram || '');
+          setProcessor(data.specs.processor || '');
+          setStorage(data.specs.storage || '');
+          setScreen(data.specs.screen || '');
+        }
         setLoading(false);
       } catch (error) {
         console.error(error);
@@ -76,7 +86,10 @@ const ProductEdit = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${userInfo.token}`,
         },
-        body: JSON.stringify({ name, price, image, brand, category, countInStock, description }),
+        body: JSON.stringify({ 
+          name, price, image, brand, category, countInStock, description,
+          specs: { ram, processor, storage, screen }
+        }),
       });
       if (res.ok) {
         navigate('/admin/products');
@@ -143,6 +156,28 @@ const ProductEdit = () => {
           <div className="form-group">
             <label className="form-label">Description</label>
             <textarea className="form-control" value={description} onChange={(e) => setDescription(e.target.value)} rows="5" required />
+          </div>
+
+          <div style={{ background: 'var(--color-bg-alt)', padding: '1.5rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '1rem', marginBottom: '1.25rem', color: 'var(--color-text)' }}>Technical Specifications</h3>
+            <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">RAM (e.g. 16GB)</label>
+                <input type="text" className="form-control" value={ram} onChange={(e) => setRam(e.target.value)} placeholder="16GB" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Processor (e.g. Intel i7)</label>
+                <input type="text" className="form-control" value={processor} onChange={(e) => setProcessor(e.target.value)} placeholder="Intel i7" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Storage (e.g. 512GB SSD)</label>
+                <input type="text" className="form-control" value={storage} onChange={(e) => setStorage(e.target.value)} placeholder="512GB SSD" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Screen (e.g. 15.6" OLED)</label>
+                <input type="text" className="form-control" value={screen} onChange={(e) => setScreen(e.target.value)} placeholder='15.6" OLED' />
+              </div>
+            </div>
           </div>
           <button type="submit" className="btn btn-primary btn-block">
             {isEditMode ? 'Update Product' : 'Create Product'}

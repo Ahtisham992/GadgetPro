@@ -27,6 +27,14 @@ const productSchema = mongoose.Schema({
   numReviews: { type: Number, required: true, default: 0 },
   price: { type: Number, required: true, default: 0 },
   countInStock: { type: Number, required: true, default: 0 },
+  specs: {
+    ram: { type: String },
+    processor: { type: String },
+    storage: { type: String },
+    screen: { type: String },
+    battery: { type: String },
+    color: { type: String },
+  },
 }, { timestamps: true });
 
 const Product = mongoose.model('Product', productSchema);

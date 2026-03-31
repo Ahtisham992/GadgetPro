@@ -10,22 +10,39 @@ const getProducts = asyncHandler(async (req, res) => {
   const pageSize = Number(req.query.limit) || 12;
   const page = Number(req.query.page) || 1;
 
-  const keyword = req.query.keyword
-    ? {
-        $or: [
-          { name: { $regex: req.query.keyword, $options: 'i' } },
-          { brand: { $regex: req.query.keyword, $options: 'i' } },
-          { category: { $regex: req.query.keyword, $options: 'i' } },
-        ],
-      }
-    : {};
+  const { keyword, category, brand, minPrice, maxPrice, ram, processor, storage } = req.query;
 
-  const category = req.query.category ? { category: req.query.category } : {};
+  const query = {};
 
-  const count = await Product.countDocuments({ ...keyword, ...category });
-  const products = await Product.find({ ...keyword, ...category })
+  if (keyword) {
+    query.$or = [
+      { name: { $regex: keyword, $options: 'i' } },
+      { brand: { $regex: keyword, $options: 'i' } },
+      { category: { $regex: keyword, $options: 'i' } },
+    ];
+  }
+
+  if (category && category !== 'All') query.category = category;
+  
+  if (brand) {
+    query.brand = { $in: brand.split(',') };
+  }
+
+  if (minPrice || maxPrice) {
+    query.price = {};
+    if (minPrice) query.price.$gte = Number(minPrice);
+    if (maxPrice) query.price.$lte = Number(maxPrice);
+  }
+
+  if (ram) query['specs.ram'] = { $in: ram.split(',') };
+  if (processor) query['specs.processor'] = { $in: processor.split(',') };
+  if (storage) query['specs.storage'] = { $in: storage.split(',') };
+
+  const count = await Product.countDocuments(query);
+  const products = await Product.find(query)
     .limit(pageSize)
-    .skip(pageSize * (page - 1));
+    .skip(pageSize * (page - 1))
+    .sort({ createdAt: -1 });
 
   res.json({ products, page, pages: Math.ceil(count / pageSize), total: count });
 });
@@ -61,7 +78,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
 // @route   POST /api/products
 // @access  Private/Admin
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, brand, category, countInStock } = req.body;
+  const { name, price, description, image, brand, category, countInStock, specs } = req.body;
   const product = new Product({
     name: name || 'Sample name',
     price: price || 0,
@@ -72,6 +89,7 @@ const createProduct = asyncHandler(async (req, res) => {
     countInStock: countInStock || 0,
     numReviews: 0,
     description: description || 'Sample description',
+    specs: specs || {},
   });
 
   const createdProduct = await product.save();
@@ -82,7 +100,7 @@ const createProduct = asyncHandler(async (req, res) => {
 // @route   PUT /api/products/:id
 // @access  Private/Admin
 const updateProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, brand, category, countInStock } = req.body;
+  const { name, price, description, image, brand, category, countInStock, specs } = req.body;
 
   const product = await Product.findById(req.params.id);
 
@@ -94,6 +112,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     product.brand = brand !== undefined ? brand : product.brand;
     product.category = category !== undefined ? category : product.category;
     product.countInStock = countInStock !== undefined ? countInStock : product.countInStock;
+    product.specs = specs !== undefined ? specs : product.specs;
 
     const updatedProduct = await product.save();
     res.json(updatedProduct);

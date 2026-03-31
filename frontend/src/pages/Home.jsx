@@ -1,9 +1,12 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
-import { ShieldCheck, Truck, RefreshCw, Headphones } from 'lucide-react';
+import { ShieldCheck, Truck, RefreshCw, Headphones, Filter, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Laptops', 'Smartphones', 'Audio', 'Wearables', 'Accessories'];
+const BRANDS = ['Apple', 'Samsung', 'Dell', 'HP', 'Sony', 'Asus', 'Microsoft'];
+const RAM_OPTIONS = ['4GB', '8GB', '16GB', '32GB', '64GB'];
+const PROCESSORS = ['Intel i5', 'Intel i7', 'Intel i9', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Apple M1', 'Apple M2', 'Apple M3'];
 const PRODUCT_REFRESH_MS = 60_000; // refresh product list every 60 s
 
 const Home = () => {
@@ -16,26 +19,55 @@ const Home = () => {
   const activeCategory = searchParams.get('category') || 'All';
   const keyword = searchParams.get('search') || '';
   const currentPage = Number(searchParams.get('page')) || 1;
+  const minPrice = searchParams.get('minPrice') || '';
+  const maxPrice = searchParams.get('maxPrice') || '';
+
+  const brandParam = searchParams.get('brand') || '';
+  const ramParam = searchParams.get('ram') || '';
+  const processorParam = searchParams.get('processor') || '';
+
+  const selectedBrands = useMemo(() => brandParam ? brandParam.split(',') : [], [brandParam]);
+  const selectedRam = useMemo(() => ramParam ? ramParam.split(',') : [], [ramParam]);
+  const selectedProcessors = useMemo(() => processorParam ? processorParam.split(',') : [], [processorParam]);
 
   // ✅ Fixed: was referencing undefined `setCategory`
   const updateParams = useCallback((updates) => {
     const newParams = new URLSearchParams(searchParams);
     Object.entries(updates).forEach(([k, v]) => {
-      if (v) newParams.set(k, v);
-      else newParams.delete(k);
+      if (Array.isArray(v)) {
+        if (v.length > 0) newParams.set(k, v.join(','));
+        else newParams.delete(k);
+      } else if (v) {
+        newParams.set(k, v);
+      } else {
+        newParams.delete(k);
+      }
     });
-    // Reset to page 1 when changing category/search
-    if (updates.category !== undefined || updates.search !== undefined) newParams.delete('page');
+
+    // Reset to page 1 when changing filters
+    const filterKeys = ['category', 'search', 'brand', 'ram', 'processor', 'minPrice', 'maxPrice'];
+    if (Object.keys(updates).some(k => filterKeys.includes(k))) {
+      newParams.delete('page');
+    }
+
     setSearchParams(newParams);
-    document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
+    if (Object.keys(updates).some(k => filterKeys.includes(k))) {
+      document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [searchParams, setSearchParams]);
 
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
+  const fetchProducts = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       let url = `/api/products?page=${currentPage}&limit=12`;
       if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
       if (activeCategory && activeCategory !== 'All') url += `&category=${encodeURIComponent(activeCategory)}`;
+      if (selectedBrands.length > 0) url += `&brand=${encodeURIComponent(selectedBrands.join(','))}`;
+      if (selectedRam.length > 0) url += `&ram=${encodeURIComponent(selectedRam.join(','))}`;
+      if (selectedProcessors.length > 0) url += `&processor=${encodeURIComponent(selectedProcessors.join(','))}`;
+      if (minPrice) url += `&minPrice=${minPrice}`;
+      if (maxPrice) url += `&maxPrice=${maxPrice}`;
+
       const res = await fetch(url);
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -43,13 +75,13 @@ const Home = () => {
       setPageStats({ page: data.page, pages: data.pages, total: data.total });
     } catch { setProducts([]); }
     finally { setLoading(false); }
-  }, [keyword, currentPage, activeCategory]);
+  }, [keyword, currentPage, activeCategory, brandParam, ramParam, processorParam, minPrice, maxPrice]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   // ✅ Fix #5: auto-refresh product list to show new stock/products
   useEffect(() => {
-    timerRef.current = setInterval(fetchProducts, PRODUCT_REFRESH_MS);
+    timerRef.current = setInterval(() => fetchProducts(true), PRODUCT_REFRESH_MS);
     return () => clearInterval(timerRef.current);
   }, [fetchProducts]);
 
@@ -125,80 +157,183 @@ const Home = () => {
         </section>
       )}
 
-      {/* ── Features Bar ── */}
-      <section style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
-        <div className="container">
-          <div className="grid grid-cols-4 features-grid-mobile" style={{ gap: 0 }}>
-            {features.map((f, i) => (
-              <div key={i} className="feature-item" style={{ borderRight: i < features.length - 1 ? '1px solid var(--color-border)' : 'none', paddingRight: i < features.length - 1 ? '1.5rem' : '0', paddingLeft: i > 0 ? '1.5rem' : '0' }}>
-                <div style={{ color: 'var(--color-primary)', flexShrink: 0 }}>{f.icon}</div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)', marginBottom: '0.125rem' }}>{f.title}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', lineHeight: 1.3 }}>{f.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Products ── */}
+      {/* ── Products Section ── */}
       <section id="products" style={{ padding: '4rem 0' }}>
         <div className="container">
-          <div className="section-head">
-            <h2 className="section-title">Our Products</h2>
+          <div className="section-head" style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <h2 className="section-title">Explore Our Premium Tech</h2>
+            <p style={{ color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>Precision-engineered gadgets for the modern world</p>
           </div>
 
-          {/* ✅ Categories Filter */}
-          <div id="products-section" style={{ display: 'flex', gap: '0.625rem', marginBottom: '2.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => updateParams({ category: cat === 'All' ? '' : cat })}
-                style={{ padding: '0.4rem 1rem', borderRadius: '20px', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.15s', border: '1.5px solid', fontFamily: 'inherit', borderColor: activeCategory === cat ? 'var(--color-primary)' : 'var(--color-border)', background: activeCategory === cat ? 'var(--color-primary)' : 'var(--color-surface)', color: activeCategory === cat ? '#fff' : 'var(--color-text-muted)' }}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-4 grid-cols-2-sm">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                  <div className="skeleton" style={{ height: '220px' }} />
-                  <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                    <div className="skeleton" style={{ height: '12px', width: '40%' }} />
-                    <div className="skeleton" style={{ height: '16px', width: '90%' }} />
-                    <div className="skeleton" style={{ height: '20px', width: '50%', marginTop: '0.5rem' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : products.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--color-text-muted)' }}>
-              No products found {keyword ? `matching "${keyword}"` : 'in this category'}.
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-4 grid-cols-2-sm">
-                {products.map(p => <ProductCard key={p._id} product={p} />)}
+          <div id="products-section" className="home-layout-grid" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2.5rem', alignItems: 'start' }}>
+            {/* ── Sidebar Filters ── */}
+            <aside className="filter-sidebar">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--color-border)' }}>
+                <Filter size={18} color="var(--color-primary)" />
+                <span style={{ fontWeight: 700, fontSize: '1rem' }}>Advanced Filters</span>
               </div>
 
-              {pageStats.pages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '3rem' }}>
-                  <button disabled={pageStats.page === 1} onClick={() => updateParams({ page: String(pageStats.page - 1) })} className="btn btn-outline btn-sm">Prev</button>
-                  {[...Array(pageStats.pages).keys()].map(x => (
-                    <button key={x + 1} onClick={() => updateParams({ page: String(x + 1) })} className="btn btn-sm"
-                      style={{ background: pageStats.page === x + 1 ? 'var(--color-primary)' : 'var(--color-bg-alt)', color: pageStats.page === x + 1 ? '#fff' : 'var(--color-text)', border: 'none' }}>
-                      {x + 1}
-                    </button>
-                  ))}
-                  <button disabled={pageStats.page === pageStats.pages} onClick={() => updateParams({ page: String(pageStats.page + 1) })} className="btn btn-outline btn-sm">Next</button>
+              {/* Price Range */}
+              <div className="filter-group">
+                <div className="filter-title">Price Range</div>
+                <div className="price-slider-container">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1000000"
+                    step="10000"
+                    value={maxPrice || 1000000}
+                    onChange={(e) => updateParams({ maxPrice: e.target.value })}
+                    className="range-slider"
+                  />
+                  <div className="range-values">
+                    <span>PKR 0</span>
+                    <span>PKR {Number(maxPrice || 1000000).toLocaleString()}</span>
+                  </div>
                 </div>
+              </div>
+
+              {/* Categories */}
+              <div className="filter-group">
+                <div className="filter-title">Category</div>
+                <div className="filter-list">
+                  {CATEGORIES.map(cat => (
+                    <label key={cat} className="filter-checkbox-item">
+                      <input
+                        type="checkbox"
+                        checked={activeCategory === cat}
+                        onChange={() => updateParams({ category: cat === 'All' ? '' : cat })}
+                      />
+                      <span style={{ color: activeCategory === cat ? 'var(--color-text)' : 'inherit', fontWeight: activeCategory === cat ? 600 : 400 }}>{cat}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Brands */}
+              <div className="filter-group">
+                <div className="filter-title">Brands</div>
+                <div className="filter-list">
+                  {BRANDS.map(b => (
+                    <label key={b} className="filter-checkbox-item">
+                      <input
+                        type="checkbox"
+                        checked={selectedBrands.includes(b)}
+                        onChange={() => {
+                          const newBrands = selectedBrands.includes(b)
+                            ? selectedBrands.filter(x => x !== b)
+                            : [...selectedBrands, b];
+                          updateParams({ brand: newBrands });
+                        }}
+                      />
+                      <span>{b}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* RAM Specifications */}
+              <div className="filter-group">
+                <div className="filter-title">RAM Size</div>
+                <div className="filter-list">
+                  {RAM_OPTIONS.map(ram => (
+                    <label key={ram} className="filter-checkbox-item">
+                      <input
+                        type="checkbox"
+                        checked={selectedRam.includes(ram)}
+                        onChange={() => {
+                          const newRam = selectedRam.includes(ram)
+                            ? selectedRam.filter(x => x !== ram)
+                            : [...selectedRam, ram];
+                          updateParams({ ram: newRam });
+                        }}
+                      />
+                      <span>{ram}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Processor */}
+              <div className="filter-group">
+                <div className="filter-title">Processor</div>
+                <div className="filter-list">
+                  {PROCESSORS.map(proc => (
+                    <label key={proc} className="filter-checkbox-item">
+                      <input
+                        type="checkbox"
+                        checked={selectedProcessors.includes(proc)}
+                        onChange={() => {
+                          const newProc = selectedProcessors.includes(proc)
+                            ? selectedProcessors.filter(x => x !== proc)
+                            : [...selectedProcessors, proc];
+                          updateParams({ processor: newProc });
+                        }}
+                      />
+                      <span>{proc}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {(selectedBrands.length > 0 || selectedRam.length > 0 || selectedProcessors.length > 0 || maxPrice || activeCategory !== 'All') && (
+                <button
+                  onClick={() => setSearchParams({})}
+                  className="btn btn-ghost btn-sm btn-block"
+                  style={{ marginTop: '1rem', border: '1px dashed var(--color-border)' }}
+                >
+                  <X size={14} style={{ marginRight: '0.5rem' }} /> Clear All Filters
+                </button>
               )}
-            </>
-          )}
+            </aside>
+
+            {/* ── Product Feed ── */}
+            <div className="product-feed">
+              {loading ? (
+                <div className="grid grid-cols-3 grid-cols-2-sm" style={{ gap: '1.5rem' }}>
+                  {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} style={{ borderRadius: 'var(--radius-xl)', overflow: 'hidden', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                      <div className="skeleton" style={{ height: '220px' }} />
+                      <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                        <div className="skeleton" style={{ height: '12px', width: '40%' }} />
+                        <div className="skeleton" style={{ height: '16px', width: '90%' }} />
+                        <div className="skeleton" style={{ height: '20px', width: '50%', marginTop: '0.5rem' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : products.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '6rem 2rem', background: 'var(--color-bg-alt)', borderRadius: 'var(--radius-xl)', border: '2px dashed var(--color-border)' }}>
+                  <div style={{ background: 'var(--color-surface)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+                    <Filter size={32} color="var(--color-text-muted)" />
+                  </div>
+                  <h3 style={{ marginBottom: '0.5rem' }}>No Products Found</h3>
+                  <p style={{ color: 'var(--color-text-muted)', maxWidth: '300px', margin: '0 auto' }}>
+                    Try adjusting your filters or search keywords to find what you're looking for.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 grid-cols-2-sm" style={{ gap: '1.5rem' }}>
+                    {products.map(p => <ProductCard key={p._id} product={p} />)}
+                  </div>
+
+                  {pageStats.pages > 1 && (
+                    <div className="pagination-wrap">
+                      <button disabled={pageStats.page === 1} onClick={() => updateParams({ page: String(pageStats.page - 1) })} className="btn btn-outline btn-sm">Prev</button>
+                      {[...Array(pageStats.pages).keys()].map(x => (
+                        <button key={x + 1} onClick={() => updateParams({ page: String(x + 1) })} className="btn btn-sm"
+                          style={{ background: pageStats.page === x + 1 ? 'var(--color-primary)' : 'var(--color-surface)', color: pageStats.page === x + 1 ? '#fff' : 'var(--color-text)', border: pageStats.page === x + 1 ? 'none' : '1px solid var(--color-border)' }}>
+                          {x + 1}
+                        </button>
+                      ))}
+                      <button disabled={pageStats.page === pageStats.pages} onClick={() => updateParams({ page: String(pageStats.page + 1) })} className="btn btn-outline btn-sm">Next</button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
