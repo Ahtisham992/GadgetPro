@@ -1906,4 +1906,215 @@ body.filter-open {
 .product-card.out-of-stock .product-card-img-wrap {
   filter: brightness(0.9);
 }
+
+/* Compare Badge */
+.compare-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.25rem 0.625rem;
+  border-radius: 20px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-light);
+  cursor: pointer;
+  z-index: 5;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+}
+
+.compare-badge:hover {
+  background: #fff;
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.compare-badge.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.product-card:hover .compare-badge {
+  opacity: 1;
+}
+
+@media (max-width: 992px) {
+  .compare-badge {
+    left: auto;
+    right: 3.5rem; /* Next to wishlist heart */
+    transform: none;
+    top: 0.75rem;
+  }
+  .compare-badge:hover {
+    transform: scale(1.05);
+  }
+}
+
+/* Compare Bar */
+.compare-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 9999;
+  border-top: 1px solid var(--color-border);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.compare-item-thumb {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: visible;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.compare-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.compare-item-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.compare-item-thumb:hover .compare-item-remove {
+  opacity: 1;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Compare Matrix */
+.compare-matrix-wrapper {
+  background: #fff;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.compare-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 900px; /* Force scroll for better layout */
+}
+
+.compare-matrix th, .compare-matrix td {
+  padding: 1.5rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+  width: 22%;
+}
+
+.compare-matrix th:first-child, .compare-matrix td:first-child {
+  width: 120px;
+  min-width: 120px;
+  text-align: left;
+  background: #f8fafc;
+  font-weight: 700;
+  color: var(--color-text);
+  border-right: 1px solid var(--color-border);
+  padding-left: 1.25rem;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  box-shadow: 4px 0 10px rgba(0,0,0,0.03);
+}
+
+.compare-matrix th.spec-label-col {
+  background: #f1f5f9;
+}
+
+.compare-matrix .spec-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+
+.compare-matrix .spec-value {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.compare-matrix .product-col {
+  vertical-align: top;
+  background: #fff;
+  padding-top: 2rem;
+}
+
+.compare-matrix .product-col.empty, .compare-matrix .spec-value.empty {
+  background: #fafafa;
+}
+
+.compare-matrix tr:hover td {
+  background-color: #f8fafc;
+}
+
+.compare-matrix tr:hover td:first-child {
+  background-color: #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .container { padding-left: 1rem; padding-right: 1rem; }
+  .compare-matrix { min-width: 800px; }
+  .compare-matrix th, .compare-matrix td { padding: 1rem 0.75rem; }
+  .compare-matrix th:first-child, .compare-matrix td:first-child { 
+    width: 100px; min-width: 100px; padding-left: 0.75rem; font-size: 0.75rem;
+  }
+  .compare-matrix .spec-value { font-size: 0.8125rem; }
+  
+  .compare-bar .btn-sm { font-size: 0.75rem; padding: 0.5rem 0.75rem !important; }
+}
+
+
+
+
 

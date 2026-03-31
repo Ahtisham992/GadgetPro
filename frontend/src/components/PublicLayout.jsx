@@ -1,5 +1,6 @@
 import Header from './Header';
 import Footer from './Footer';
+import CompareBar from './CompareBar';
 
 const PublicLayout = ({ children }) => {
   return (
@@ -8,6 +9,7 @@ const PublicLayout = ({ children }) => {
       <main style={{ flex: 1 }}>
         {children}
       </main>
+      <CompareBar />
       <Footer />
     </div>
   );

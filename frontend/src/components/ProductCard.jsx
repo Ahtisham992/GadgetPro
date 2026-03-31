@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Star, Heart } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import useUserStore from '../store/userStore';
+import useCompareStore from '../store/compareStore';
 import { useToast } from '../context/ToastContext';
+import { Columns } from 'lucide-react';
 
 const ProductCard = ({ product, onWishlistChange }) => {
   const addToCart = useCartStore((state) => state.addToCart);
@@ -50,11 +52,36 @@ const ProductCard = ({ product, onWishlistChange }) => {
     finally { setWishlistLoading(false); }
   };
 
+  const { compareItems, addToCompare, removeFromCompare } = useCompareStore();
+  const isComparing = compareItems.some((p) => p._id === product._id);
+
+  const handleCompareToggle = (e) => {
+    e.preventDefault();
+    if (isComparing) {
+      removeFromCompare(product._id);
+    } else {
+      const added = addToCompare(product);
+      if (!added) {
+        toast('Comparison tool is limited to 4 items', 'info');
+      }
+    }
+  };
+
   const isOutOfStock = product.countInStock === 0;
   const isNearlyOutOfStock = !isOutOfStock && product.countInStock <= 5;
 
   return (
     <div className={`product-card ${isOutOfStock ? 'out-of-stock' : ''}`}>
+      {/* Compare Badge/Toggle */}
+      <div 
+        onClick={handleCompareToggle}
+        className={`compare-badge ${isComparing ? 'active' : ''}`}
+        title={isComparing ? "Remove from Compare" : "Add to Compare"}
+      >
+        <Columns size={12} />
+        {isComparing ? 'Comparing' : 'Compare'}
+      </div>
+
       {/* Out of Stock Badge */}
       {isOutOfStock && (
         <div style={{

@@ -14,6 +14,7 @@ import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import CategoryPage from './pages/CategoryPage';
 import WishlistPage from './pages/WishlistPage';
+import Compare from './pages/Compare';
 
 import DashboardOverview from './pages/admin/DashboardOverview';
 import ProductList from './pages/admin/ProductList';
@@ -46,6 +47,7 @@ function App() {
         <Route path="/profile" element={<PublicLayout><Profile /></PublicLayout>} />
         <Route path="/category/:cat" element={<PublicLayout><CategoryPage /></PublicLayout>} />
         <Route path="/wishlist" element={<PublicLayout><WishlistPage /></PublicLayout>} />
+        <Route path="/compare" element={<PublicLayout><Compare /></PublicLayout>} />
 
         {/* Admin Dashboard Suite */}
         <Route path="/admin" element={<AdminLayout />}>
