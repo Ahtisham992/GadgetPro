@@ -293,4 +293,50 @@ const subscribeToProduct = asyncHandler(async (req, res) => {
   }
 });
 
-export { getProducts, getProductById, deleteProduct, createProduct, updateProduct, createProductReview, replyToReview, deleteReview, getTrendingStats, subscribeToProduct };
+// @desc    Get recommendations for a product
+// @route   GET /api/products/:id/recommendations
+// @access  Public
+const getRecommendations = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  // 1. Frequently Bought Together (Same category but different accessories if laptop, or just similar category)
+  // For simplicity, we find products in complementary categories or same category
+  let complementaryCategories = [product.category];
+  if (product.category === 'Laptops') complementaryCategories.push('Accessories', 'Mice', 'Keyboards');
+  
+  const frequentlyBought = await Product.find({
+    category: { $in: complementaryCategories },
+    _id: { $ne: product._id },
+    countInStock: { $gt: 0 }
+  }).limit(4);
+
+  // 2. You Might Also Like (Same brand or similar price range or same category)
+  const youMightLike = await Product.find({
+    $or: [
+      { brand: product.brand },
+      { category: product.category }
+    ],
+    _id: { $ne: product._id },
+    countInStock: { $gt: 0 }
+  }).sort({ rating: -1 }).limit(6);
+
+  res.json({ frequentlyBought, youMightLike });
+});
+
+export { 
+  getProducts, 
+  getProductById, 
+  deleteProduct, 
+  createProduct, 
+  updateProduct, 
+  createProductReview, 
+  replyToReview, 
+  deleteReview, 
+  getTrendingStats, 
+  subscribeToProduct,
+  getRecommendations
+};

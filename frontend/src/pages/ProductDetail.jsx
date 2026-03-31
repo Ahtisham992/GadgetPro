@@ -3,7 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import useCartStore from '../store/cartStore';
 import useUserStore from '../store/userStore';
 import { useToast } from '../context/ToastContext';
-import { ShoppingCart, ChevronRight, Plus, Minus, Star, Bell } from 'lucide-react';
+import { ShoppingCart, ChevronRight, Plus, Minus, Star, Bell, ArrowRight } from 'lucide-react';
+import ProductCard from '../components/ProductCard';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -16,6 +17,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState('');
+  const [recommendations, setRecommendations] = useState({ frequentlyBought: [], youMightLike: [] });
 
   const addToCart = useCartStore(s => s.addToCart);
 
@@ -63,6 +65,19 @@ const ProductDetail = () => {
       }
     };
     fetchProduct();
+    
+    const fetchRecommendations = async () => {
+      try {
+        const res = await fetch(`/api/products/${id}/recommendations`);
+        if (res.ok) {
+          const data = await res.json();
+          setRecommendations(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch recommendations', err);
+      }
+    };
+    fetchRecommendations();
   }, [id]);
 
   const addToCartHandler = () => { addToCart(product, qty); navigate('/cart'); };
@@ -235,8 +250,58 @@ const ProductDetail = () => {
                 Add to Cart
               </button>
             )}
+
+            {/* Frequently Bought Together */}
+            {recommendations.frequentlyBought?.length > 0 && (
+              <div style={{ marginTop: '2.5rem', padding: '1.5rem', background: 'var(--color-bg-alt)', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
+                <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  Frequently Bought Together
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {recommendations.frequentlyBought.map(item => (
+                    <div key={item._id} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '50px', height: '50px', background: '#fff', borderRadius: '8px', padding: '0.25rem', border: '1px solid var(--color-border)' }}>
+                        <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700 }}>PKR {item.price.toLocaleString()}</div>
+                      </div>
+                      <button 
+                        onClick={() => addToCart(item, 1)}
+                        style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--color-primary)', background: 'transparent', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-primary)'; e.currentTarget.style.color = '#fff' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-primary)' }}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* You Might Also Like Section */}
+        {recommendations.youMightLike?.length > 0 && (
+          <div style={{ marginBottom: '4rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.75rem', letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>You Might Also Like</h2>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9375rem' }}>Personalized suggestions based on this product and your preferences.</p>
+              </div>
+              <Link to="/search" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.875rem' }}>
+                View All <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-4" style={{ gap: '1.5rem' }}>
+              {recommendations.youMightLike.slice(0, 4).map(item => (
+                <ProductCard key={item._id} product={item} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '20px', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>

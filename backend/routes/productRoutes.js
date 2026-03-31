@@ -3,7 +3,7 @@ const router = express.Router();
 import {
   getProducts, getProductById, deleteProduct, createProduct, updateProduct,
   createProductReview, replyToReview, deleteReview, getTrendingStats,
-  subscribeToProduct
+  subscribeToProduct, getRecommendations
 } from '../controllers/productController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -25,5 +25,6 @@ router.route('/:id')
   .delete(protect, admin, deleteProduct);
 
 router.post('/:id/subscribe', protect, subscribeToProduct);
+router.get('/:id/recommendations', getRecommendations);
 
 export default router;
