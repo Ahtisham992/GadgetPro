@@ -13,7 +13,17 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [pageStats, setPageStats] = useState({ page: 1, pages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Scroll Lock when filter is open
+  useEffect(() => {
+    if (isFilterOpen) {
+      document.body.classList.add('filter-open');
+    } else {
+      document.body.classList.remove('filter-open');
+    }
+  }, [isFilterOpen]);
   const timerRef = useRef(null);
 
   const activeCategory = searchParams.get('category') || 'All';
@@ -51,6 +61,7 @@ const Home = () => {
     }
 
     setSearchParams(newParams);
+    setIsFilterOpen(false); // Close drawer on mobile after filter
     if (Object.keys(updates).some(k => filterKeys.includes(k))) {
       document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
     }
@@ -97,13 +108,6 @@ const Home = () => {
       {/* ── Hero ── */}
       {!keyword && (
         <section className="mobile-hero-padding" style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)', padding: '5rem 0', position: 'relative', overflow: 'hidden' }}>
-          <style>{`
-            @media (max-width: 640px) {
-              .mobile-hero-padding { padding: 3rem 0 !important; }
-              .mobile-hero-content { text-align: center; align-items: center !important; }
-              .mobile-hero-text { margin: 0 auto 2.5rem !important; }
-            }
-          `}</style>
           <div style={{ position: 'absolute', top: '-100px', right: '10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%)', borderRadius: '50%' }} />
           <div style={{ position: 'absolute', bottom: '-80px', left: '5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
           <div className="container fade-in">
@@ -165,9 +169,24 @@ const Home = () => {
             <p style={{ color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>Precision-engineered gadgets for the modern world</p>
           </div>
 
+          {/* Mobile Filter Toggle */}
+          <button className="filter-mobile-toggle" onClick={() => setIsFilterOpen(true)}>
+            <Filter size={20} />
+            <span>Filters & Specifications</span>
+            {(selectedBrands.length > 0 || selectedRam.length > 0 || selectedProcessors.length > 0 || maxPrice || activeCategory !== 'All') && (
+              <span style={{ marginLeft: 'auto', background: 'var(--color-primary)', color: '#fff', fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '10px' }}>Active</span>
+            )}
+          </button>
+
+          {/* Backdrop */}
+          <div className={`filter-backdrop ${isFilterOpen ? 'active' : ''}`} onClick={() => setIsFilterOpen(false)} />
+
           <div id="products-section" className="home-layout-grid" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2.5rem', alignItems: 'start' }}>
             {/* ── Sidebar Filters ── */}
-            <aside className="filter-sidebar">
+            <aside className={`filter-sidebar ${isFilterOpen ? 'active' : ''}`}>
+              <button className="filter-close-btn" onClick={() => setIsFilterOpen(false)}>
+                <X size={20} />
+              </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--color-border)' }}>
                 <Filter size={18} color="var(--color-primary)" />
                 <span style={{ fontWeight: 700, fontSize: '1rem' }}>Advanced Filters</span>

@@ -39,10 +39,19 @@ const getProducts = asyncHandler(async (req, res) => {
   if (storage) query['specs.storage'] = { $in: storage.split(',') };
 
   const count = await Product.countDocuments(query);
-  const products = await Product.find(query)
-    .limit(pageSize)
-    .skip(pageSize * (page - 1))
-    .sort({ createdAt: -1 });
+  
+  // Use aggregation to sort "In Stock" products first, then by "CreatedAt"
+  const products = await Product.aggregate([
+    { $match: query },
+    {
+      $addFields: {
+        isStocked: { $cond: { if: { $gt: ["$countInStock", 0] }, then: 1, else: 0 } }
+      }
+    },
+    { $sort: { isStocked: -1, createdAt: -1 } },
+    { $skip: pageSize * (page - 1) },
+    { $limit: pageSize }
+  ]);
 
   res.json({ products, page, pages: Math.ceil(count / pageSize), total: count });
 });

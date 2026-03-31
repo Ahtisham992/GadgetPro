@@ -51,9 +51,10 @@ const ProductCard = ({ product, onWishlistChange }) => {
   };
 
   const isOutOfStock = product.countInStock === 0;
+  const isNearlyOutOfStock = !isOutOfStock && product.countInStock <= 5;
 
   return (
-    <div className="product-card">
+    <div className={`product-card ${isOutOfStock ? 'out-of-stock' : ''}`}>
       {/* Out of Stock Badge */}
       {isOutOfStock && (
         <div style={{

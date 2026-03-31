@@ -1790,13 +1790,120 @@ textarea.form-control {
   color: var(--color-text-muted);
 }
 
-@media (max-width: 900px) {
+/* --- Mobile Filter Drawer --- */
+.filter-mobile-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 1.5rem;
+  width: 100%;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-mobile-toggle:active {
+  transform: scale(0.98);
+}
+
+.filter-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease-in-out;
+}
+
+.filter-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+body.filter-open {
+  overflow: hidden !important;
+}
+
+
+@media (max-width: 992px) {
   .home-layout-grid {
     grid-template-columns: 1fr !important;
   }
-  
+
+  .filter-mobile-toggle {
+    display: flex;
+  }
+
   .filter-sidebar {
-    position: static;
-    margin-bottom: 2rem;
+    position: fixed !important;
+    top: 0;
+    left: -320px;
+    bottom: 0;
+    width: 300px !important;
+    max-width: 85vw;
+    height: 100dvh !important;
+    background: var(--color-surface);
+    z-index: 10000;
+    margin: 0 !important;
+    padding: 2rem 1.5rem 5rem !important; /* Bottom padding for scroll room */
+    border-radius: 0 !important;
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.15);
+    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border: none !important;
+  }
+
+
+  .filter-sidebar.active {
+    left: 0;
+  }
+  
+  .filter-sidebar .filter-close-btn {
+    display: block !important;
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    background: var(--color-bg-alt);
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    transition: all 0.2s;
+  }
+
+  .filter-sidebar .filter-close-btn:hover {
+    background: var(--color-border);
+    color: var(--color-text);
   }
 }
+
+.filter-sidebar .filter-close-btn {
+  display: none;
+}
+
+/* --- Out of Stock Styling --- */
+.product-card.out-of-stock {
+  opacity: 0.6;
+  filter: grayscale(0.5);
+  transition: all 0.3s ease;
+}
+
+.product-card.out-of-stock:hover {
+  opacity: 0.9;
+  filter: grayscale(0.2);
+}
+
+.product-card.out-of-stock .product-card-img-wrap {
+  filter: brightness(0.9);
+}
+
