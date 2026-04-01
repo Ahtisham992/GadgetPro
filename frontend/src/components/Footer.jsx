@@ -25,7 +25,7 @@ const Footer = () => {
           <div>
             <h4 style={{ color: '#fff', marginBottom: '1.25rem', fontSize: '0.9375rem', fontWeight: 700 }}>Shop</h4>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {['Laptops', 'Smartphones', 'Audio', 'Wearables', 'Accessories'].map(item => (
+              {['Laptops', 'Smartphones', 'Monitors', 'Audio', 'Wearables', 'Accessories'].map(item => (
                 <li key={item}>
                   <Link to={`/?category=${item}`} style={{ color: '#9CA3AF', fontSize: '0.875rem', transition: 'color 0.15s' }}
                     onMouseEnter={e => e.target.style.color = 'var(--color-primary)'}

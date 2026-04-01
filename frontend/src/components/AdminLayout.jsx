@@ -32,13 +32,14 @@ const AdminLayout = () => {
       {/* Logo */}
       <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Package size={16} color="#fff" />
-            </div>
-            <span style={{ fontWeight: 800, fontSize: '1.0625rem', color: 'var(--color-text)', letterSpacing: '-0.02em' }}>GadgetPro</span>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.25rem' }}>
+            <img 
+              src="/GadgetPro_logo.png" 
+              alt="GadgetPro" 
+              style={{ height: '60px', width: 'auto', objectFit: 'contain' }} 
+            />
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', fontWeight: 500 }}>Admin Portal</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', fontWeight: 500, paddingLeft: '4px' }}>Admin Portal</div>
         </div>
         {/* Close button for mobile */}
         <button
@@ -129,11 +130,13 @@ const AdminLayout = () => {
             >
               <Menu size={18} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Package size={14} color="#fff" />
-              </div>
-              <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--color-text)' }}>GadgetPro Admin</span>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <img 
+                src="/GadgetPro_logo.png" 
+                alt="GadgetPro" 
+                style={{ height: '36px', width: 'auto', objectFit: 'contain' }} 
+              />
+              <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--color-text)', marginLeft: '0.5rem' }}>Admin</span>
             </div>
           </div>
           <Link to="/" style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>← Store</Link>

@@ -38,7 +38,7 @@ const Header = () => {
     navigate('/login');
   };
 
-  const categories = ['Laptops', 'Smartphones', 'Audio', 'Wearables', 'Accessories'];
+  const categories = ['Laptops', 'Smartphones', 'Monitors', 'Audio', 'Wearables', 'Accessories'];
 
   return (
     <>
