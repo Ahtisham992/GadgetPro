@@ -2,9 +2,8 @@ import { pipeline, env } from '@xenova/transformers';
 
 // Configure local model cache to avoid downloading on every run
 // Since this is dynamic in Node, we can set where models are downloaded
-// Usually, it defaults to ./node_modules/@xenova/transformers/.cache
-env.allowLocalModels = true;
-env.allowRemoteModels = false; // Prevents slow network checks to HuggingFace
+env.allowLocalModels = false; // Disable local enforcement so it works on Render
+env.allowRemoteModels = true; // MUST be true to download models from HuggingFace on first boot
 env.useBrowserCache = false;
 
 class HFExtractor {
