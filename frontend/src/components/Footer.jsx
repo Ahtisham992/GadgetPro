@@ -9,11 +9,12 @@ const Footer = () => {
 
           {/* Brand */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Package size={18} color="#fff" />
-              </div>
-              <span style={{ fontSize: '1.125rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>GadgetPro</span>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <img 
+                src="/GadgetPro_logo.png" 
+                alt="GadgetPro" 
+                style={{ height: '80px', width: 'auto', objectFit: 'contain' }} 
+              />
             </div>
             <p style={{ color: '#9CA3AF', lineHeight: 1.7, fontSize: '0.875rem' }}>
               Pakistan's premium destination for cutting-edge tech gadgets and electronics. Authentic products, fast delivery.

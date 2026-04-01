@@ -83,11 +83,12 @@ const Header = () => {
       {/* Mobile Nav Drawer */}
       <div className={`mobile-nav-drawer ${mobileOpen ? 'open' : ''}`}>
         <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link to="/" onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Package size={15} color="#fff" />
-            </div>
-            <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--color-text)' }}>GadgetPro</span>
+          <Link to="/" onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center' }}>
+            <img 
+              src="/GadgetPro_logo.png" 
+              alt="GadgetPro" 
+              style={{ height: '60px', width: 'auto', objectFit: 'contain', margin: '-10px 0' }} 
+            />
           </Link>
           <button onClick={() => setMobileOpen(false)} style={{ background: 'var(--color-bg-alt)', border: 'none', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <X size={18} />
@@ -183,15 +184,12 @@ const Header = () => {
             </button>
 
             {/* Logo */}
-            <Link to="/" style={{ flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Package size={18} color="#fff" />
-                </div>
-                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', letterSpacing: '-0.03em' }}>
-                  GadgetPro
-                </span>
-              </div>
+            <Link to="/" style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+              <img 
+                src="/GadgetPro_logo.png" 
+                alt="GadgetPro" 
+                style={{ height: '90px', width: 'auto', objectFit: 'contain', margin: '-15px 0' }} 
+              />
             </Link>
 
             {/* Desktop Category Nav */}
