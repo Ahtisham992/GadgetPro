@@ -397,7 +397,8 @@ const getRecommendations = asyncHandler(async (req, res) => {
   // 1. Try to get AI Collaborative Filtering recommendations if user is logged in
   if (userId && userId !== 'undefined') {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/recommend/${userId}?limit=6`);
+      const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${aiServiceUrl}/recommend/${userId}?limit=6`);
       if (response.ok) {
         const data = await response.json();
         if (data.recommendations && data.recommendations.length > 0) {
