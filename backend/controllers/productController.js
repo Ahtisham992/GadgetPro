@@ -4,6 +4,10 @@ import Wishlist from '../models/Wishlist.js';
 import ProductNotification from '../models/ProductNotification.js';
 import asyncHandler from 'express-async-handler';
 import { sendBackInStockEmail } from '../utils/emailService.js';
+import { generateEmbedding } from '../utils/embeddings.js';
+
+let vectorIndexExists = true; // Circuit breaker to avoid slow timeouts if index is missing
+
 
 // @desc    Fetch all products (with optional search + pagination)
 // @route   GET /api/products?keyword=&page=1&limit=12
@@ -14,46 +18,122 @@ const getProducts = asyncHandler(async (req, res) => {
 
   const { keyword, category, brand, minPrice, maxPrice, ram, processor, storage } = req.query;
 
-  const query = {};
+  const matchQuery = {};
 
-  if (keyword) {
-    query.$or = [
-      { name: { $regex: keyword, $options: 'i' } },
-      { brand: { $regex: keyword, $options: 'i' } },
-      { category: { $regex: keyword, $options: 'i' } },
-    ];
-  }
-
-  if (category && category !== 'All') query.category = category;
+  if (category && category !== 'All') matchQuery.category = category;
   
   if (brand) {
-    query.brand = { $in: brand.split(',') };
+    matchQuery.brand = { $in: brand.split(',') };
   }
 
   if (minPrice || maxPrice) {
-    query.price = {};
-    if (minPrice) query.price.$gte = Number(minPrice);
-    if (maxPrice) query.price.$lte = Number(maxPrice);
+    matchQuery.price = {};
+    if (minPrice) matchQuery.price.$gte = Number(minPrice);
+    if (maxPrice) matchQuery.price.$lte = Number(maxPrice);
   }
 
-  if (ram) query['specs.ram'] = { $in: ram.split(',') };
-  if (processor) query['specs.processor'] = { $in: processor.split(',') };
-  if (storage) query['specs.storage'] = { $in: storage.split(',') };
+  if (ram) matchQuery['specs.ram'] = { $in: ram.split(',') };
+  if (processor) matchQuery['specs.processor'] = { $in: processor.split(',') };
+  if (storage) matchQuery['specs.storage'] = { $in: storage.split(',') };
 
-  const count = await Product.countDocuments(query);
+  let products = [];
+  let count = 0;
   
-  // Use aggregation to sort "In Stock" products first, then by "CreatedAt"
-  const products = await Product.aggregate([
-    { $match: query },
-    {
-      $addFields: {
-        isStocked: { $cond: { if: { $gt: ["$countInStock", 0] }, then: 1, else: 0 } }
-      }
-    },
-    { $sort: { isStocked: -1, createdAt: -1 } },
-    { $skip: pageSize * (page - 1) },
-    { $limit: pageSize }
-  ]);
+  if (keyword && vectorIndexExists) {
+    try {
+      // 1. Semantic Vector Search
+      const queryVector = await generateEmbedding(keyword);
+      
+      // In Atlas, $vectorSearch must be the first stage
+      const pipeline = [
+        {
+          $vectorSearch: {
+            index: 'vector_index',
+            path: 'embedding',
+            queryVector: queryVector,
+            numCandidates: 100, // Number of nearest neighbors to retrieve
+            limit: 50 // Limit total semantic matches before we apply filtering
+          }
+        },
+        // Now apply the standard filters (category, price, etc.)
+        { $match: matchQuery },
+        {
+          $addFields: {
+            isStocked: { $cond: { if: { $gt: ["$countInStock", 0] }, then: 1, else: 0 } },
+            score: { $meta: "vectorSearchScore" }
+          }
+        },
+        // You can sort by semantic score or stock status
+        { $sort: { isStocked: -1, score: -1, createdAt: -1 } }
+      ];
+
+      const allMatchingProducts = await Product.aggregate(pipeline);
+      count = allMatchingProducts.length;
+      
+      // Manual pagination from the semantic results
+      const startIndex = pageSize * (page - 1);
+      products = allMatchingProducts.slice(startIndex, startIndex + pageSize);
+    } catch (vectorError) {
+      console.error("Vector Search failed (likely missing index). Disabling AI search to prevent further slow timeouts.", vectorError.message);
+      vectorIndexExists = false; // Disable dynamically
+      
+      const fallbackQuery = { ...matchQuery };
+      fallbackQuery.$or = [
+        { name: { $regex: keyword, $options: 'i' } },
+        { brand: { $regex: keyword, $options: 'i' } },
+        { category: { $regex: keyword, $options: 'i' } },
+      ];
+
+      count = await Product.countDocuments(fallbackQuery);
+      products = await Product.aggregate([
+        { $match: fallbackQuery },
+        {
+          $addFields: {
+            isStocked: { $cond: { if: { $gt: ["$countInStock", 0] }, then: 1, else: 0 } }
+          }
+        },
+        { $sort: { isStocked: -1, createdAt: -1 } },
+        { $skip: pageSize * (page - 1) },
+        { $limit: pageSize }
+      ]);
+    }
+  } else if (keyword && !vectorIndexExists) {
+      // Direct regex fallback without attempting vector search
+      const fallbackQuery = { ...matchQuery };
+      fallbackQuery.$or = [
+        { name: { $regex: keyword, $options: 'i' } },
+        { brand: { $regex: keyword, $options: 'i' } },
+        { category: { $regex: keyword, $options: 'i' } },
+      ];
+
+      count = await Product.countDocuments(fallbackQuery);
+      products = await Product.aggregate([
+        { $match: fallbackQuery },
+        {
+          $addFields: {
+            isStocked: { $cond: { if: { $gt: ["$countInStock", 0] }, then: 1, else: 0 } }
+          }
+        },
+        { $sort: { isStocked: -1, createdAt: -1 } },
+        { $skip: pageSize * (page - 1) },
+        { $limit: pageSize }
+      ]);
+  } else {
+    // 2. Standard Search (No Keyword)
+    count = await Product.countDocuments(matchQuery);
+    
+    products = await Product.aggregate([
+      { $match: matchQuery },
+      {
+        $addFields: {
+          isStocked: { $cond: { if: { $gt: ["$countInStock", 0] }, then: 1, else: 0 } }
+        }
+      },
+      { $sort: { isStocked: -1, createdAt: -1 } },
+      { $skip: pageSize * (page - 1) },
+      { $limit: pageSize }
+    ]);
+  }
 
   res.json({ products, page, pages: Math.ceil(count / pageSize), total: count });
 });
@@ -103,6 +183,10 @@ const createProduct = asyncHandler(async (req, res) => {
     specs: specs || {},
   });
 
+  // Generate embedding for AI search
+  const textToEmbed = `${product.name} ${product.brand} ${product.category} ${product.description}`;
+  product.embedding = await generateEmbedding(textToEmbed);
+
   const createdProduct = await product.save();
   res.status(201).json(createdProduct);
 });
@@ -125,6 +209,10 @@ const updateProduct = asyncHandler(async (req, res) => {
     const oldStock = product.countInStock;
     product.countInStock = countInStock !== undefined ? countInStock : product.countInStock;
     product.specs = specs !== undefined ? specs : product.specs;
+
+    // Regenerate embedding on update
+    const textToEmbed = `${product.name} ${product.brand} ${product.category} ${product.description}`;
+    product.embedding = await generateEmbedding(textToEmbed);
 
     const updatedProduct = await product.save();
 
@@ -293,8 +381,8 @@ const subscribeToProduct = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get recommendations for a product
-// @route   GET /api/products/:id/recommendations
+// @desc    Get recommendations for a product or user
+// @route   GET /api/products/:id/recommendations?userId=...
 // @access  Public
 const getRecommendations = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
@@ -303,26 +391,59 @@ const getRecommendations = asyncHandler(async (req, res) => {
     throw new Error('Product not found');
   }
 
-  // 1. Frequently Bought Together (Same category but different accessories if laptop, or just similar category)
-  // For simplicity, we find products in complementary categories or same category
+  let aiRecommendations = [];
+  const userId = req.query.userId;
+
+  // 1. Try to get AI Collaborative Filtering recommendations if user is logged in
+  if (userId && userId !== 'undefined') {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/recommend/${userId}?limit=6`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.recommendations && data.recommendations.length > 0) {
+          aiRecommendations = await Product.find({
+            _id: { $in: data.recommendations, $ne: product._id },
+            countInStock: { $gt: 0 }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('AI Recommendation Service unreachable:', error.message);
+      // Fails silently, proceeds to heuristic fallback
+    }
+  }
+
+  // 2. Frequently Bought Together (Same category but different accessories)
   let complementaryCategories = [product.category];
-  if (product.category === 'Laptops') complementaryCategories.push('Accessories', 'Mice', 'Keyboards');
+  if (product.category === 'Laptops') complementaryCategories.push('Accessories', 'Monitors');
   
   const frequentlyBought = await Product.find({
     category: { $in: complementaryCategories },
     _id: { $ne: product._id },
     countInStock: { $gt: 0 }
-  }).limit(4);
+  }).sort({ rating: -1 }).limit(4);
 
-  // 2. You Might Also Like (Same brand or similar price range or same category)
-  const youMightLike = await Product.find({
-    $or: [
-      { brand: product.brand },
-      { category: product.category }
-    ],
-    _id: { $ne: product._id },
-    countInStock: { $gt: 0 }
-  }).sort({ rating: -1 }).limit(6);
+  // 3. You Might Also Like (Use AI if available, else Brand/Category heuristic)
+  let youMightLike = aiRecommendations;
+  
+  if (youMightLike.length < 4) {
+    const fallbackRecommendations = await Product.find({
+      $or: [
+        { brand: product.brand },
+        { category: product.category }
+      ],
+      _id: { $ne: product._id },
+      countInStock: { $gt: 0 }
+    }).sort({ rating: -1 }).limit(6 - youMightLike.length);
+
+    // Merge without duplicates
+    const distinctIds = new Set(youMightLike.map(p => p._id.toString()));
+    for (const p of fallbackRecommendations) {
+      if (!distinctIds.has(p._id.toString())) {
+        youMightLike.push(p);
+      }
+    }
+  }
 
   res.json({ frequentlyBought, youMightLike });
 });

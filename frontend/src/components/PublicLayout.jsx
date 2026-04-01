@@ -1,6 +1,7 @@
 import Header from './Header';
 import Footer from './Footer';
 import CompareBar from './CompareBar';
+import ChatWidget from './ChatWidget';
 
 const PublicLayout = ({ children }) => {
   return (
@@ -11,6 +12,7 @@ const PublicLayout = ({ children }) => {
       </main>
       <CompareBar />
       <Footer />
+      <ChatWidget />
     </div>
   );
 };

@@ -68,7 +68,10 @@ const ProductDetail = () => {
     
     const fetchRecommendations = async () => {
       try {
-        const res = await fetch(`/api/products/${id}/recommendations`);
+        const url = userInfo 
+          ? `/api/products/${id}/recommendations?userId=${userInfo._id}`
+          : `/api/products/${id}/recommendations`;
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           setRecommendations(data);

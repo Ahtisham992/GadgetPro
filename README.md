@@ -119,7 +119,7 @@ npm run dev
 
 **Terminal 2 (Python AI Recommendation Service):**
 ```bash
-cd backend/ai_service
+cd ai_service
 .\setup.bat
 # (For Mac/Linux, run: python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && uvicorn main:app --port 8000)
 ```
@@ -139,10 +139,6 @@ Browse to `http://localhost:5173` to see GadgetPro in action!
 ```
 Nextgen/
 ├── backend/                  # Express server & APIs
-│   ├── ai_service/           # Python FastAPI Recommendation Engine
-│   │   ├── main.py
-│   │   ├── requirements.txt
-│   │   └── setup.bat
 │   ├── config/               # Database config
 │   ├── controllers/          # Endpoint logic (products, chat, orders)
 │   ├── data/                 # Seeding data
@@ -157,6 +153,10 @@ Nextgen/
 │   │   ├── store/            # Zustand global state (Cart, User, Wishlist)
 │   │   ├── App.jsx           # Routing definition
 │   │   └── index.css         # Global styling & CSS variables
+├── ai_service/           # Python FastAPI Recommendation Engine
+│   ├── main.py
+│   ├── requirements.txt
+│   └── setup.bat
 └── README.md
 ```
 

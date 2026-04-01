@@ -22,6 +22,7 @@ const productSchema = mongoose.Schema({
   brand: { type: String, required: true },
   category: { type: String, required: true },
   description: { type: String, required: true },
+  embedding: { type: [Number] },
   reviews: [reviewSchema],
   rating: { type: Number, required: true, default: 0 },
   numReviews: { type: Number, required: true, default: 0 },
