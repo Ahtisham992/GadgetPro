@@ -126,6 +126,47 @@ const Home = () => {
                   <a href="#products"><button className="btn btn-primary btn-lg">Shop Now</button></a>
                   <Link to="/profile"><button className="btn btn-lg" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>My Orders</button></Link>
                 </div>
+
+                {/* ── Android App Download ── */}
+                <a
+                  href="https://github.com/Ahtisham992/GadgetPro/releases"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.75rem',
+                    marginTop: '1.25rem',
+                    background: 'rgba(61,220,132,0.08)',
+                    border: '1px solid rgba(61,220,132,0.25)',
+                    borderRadius: '14px',
+                    padding: '0.7rem 1.25rem',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s',
+                    cursor: 'pointer',
+                    width: 'fit-content',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(61,220,132,0.16)'; e.currentTarget.style.borderColor = 'rgba(61,220,132,0.5)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(61,220,132,0.08)'; e.currentTarget.style.borderColor = 'rgba(61,220,132,0.25)'; }}
+                >
+                  {/* Android logo SVG */}
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.523 15.341C17.523 15.7812 17.166 16.1382 16.7258 16.1382C16.2856 16.1382 15.9286 15.7812 15.9286 15.341V10.2236C15.9286 9.78338 16.2856 9.42638 16.7258 9.42638C17.166 9.42638 17.523 9.78338 17.523 10.2236V15.341Z" fill="#3DDC84"/>
+                    <path d="M8.07143 15.341C8.07143 15.7812 7.71443 16.1382 7.27422 16.1382C6.83401 16.1382 6.47701 15.7812 6.47701 15.341V10.2236C6.47701 9.78338 6.83401 9.42638 7.27422 9.42638C7.71443 9.42638 8.07143 9.78338 8.07143 10.2236V15.341Z" fill="#3DDC84"/>
+                    <path d="M9.6665 19.5371C9.6665 19.9773 9.3095 20.3343 8.86929 20.3343C8.42908 20.3343 8.07208 19.9773 8.07208 19.5371V14.4197C8.07208 13.9795 8.42908 13.6225 8.86929 13.6225C9.3095 13.6225 9.6665 13.9795 9.6665 14.4197V19.5371Z" fill="#3DDC84"/>
+                    <path d="M15.9286 19.5371C15.9286 19.9773 15.5716 20.3343 15.1314 20.3343C14.6912 20.3343 14.3342 19.9773 14.3342 19.5371V14.4197C14.3342 13.9795 14.6912 13.6225 15.1314 13.6225C15.5716 13.6225 15.9286 13.9795 15.9286 14.4197V15.341V19.5371Z" fill="#3DDC84"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M8.46429 9.42638H15.5357C16.3963 9.42638 17.0952 10.1252 17.0952 10.9858V16.1033C17.0952 16.9639 16.3963 17.6628 15.5357 17.6628H8.46429C7.60367 17.6628 6.90476 16.9639 6.90476 16.1033V10.9858C6.90476 10.1252 7.60367 9.42638 8.46429 9.42638Z" fill="#3DDC84"/>
+                    <path d="M14.8095 9.42638H9.19048L8.12207 5.66748L9.66667 4.95238L11.0127 7.79258L12.9873 7.79258L14.3333 4.95238L15.8779 5.66748L14.8095 9.42638Z" fill="#3DDC84"/>
+                    <circle cx="9.19048" cy="5.09524" r="0.761905" fill="#3DDC84"/>
+                    <circle cx="14.8095" cy="5.09524" r="0.761905" fill="#3DDC84"/>
+                  </svg>
+                  <div>
+                    <div style={{ fontSize: '0.6875rem', color: '#3DDC84', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', lineHeight: 1 }}>Get it on</div>
+                    <div style={{ fontSize: '0.9375rem', color: '#fff', fontWeight: 700, lineHeight: 1.3, marginTop: '0.15rem' }}>Android APK</div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3DDC84" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '0.25rem', opacity: 0.7 }}>
+                    <path d="M12 2v14M5 9l7 7 7-7"/>
+                    <line x1="5" y1="22" x2="19" y2="22"/>
+                  </svg>
+                </a>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
