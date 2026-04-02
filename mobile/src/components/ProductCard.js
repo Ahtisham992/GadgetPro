@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { theme } from '../theme/colors';
+import { resolveImageUrl } from '../config';
 
 // Get screen width to calculate card sizes for grid
 const { width } = Dimensions.get('window');
@@ -15,7 +16,7 @@ const ProductCard = ({ product, onPress }) => {
     >
       <View style={styles.imageWrap}>
         <Image 
-          source={{ uri: product.image.startsWith('http') ? product.image : `http://10.0.2.2:5000${product.image}` }} 
+          source={{ uri: resolveImageUrl(product.image) }} 
           style={styles.image} 
           resizeMode="contain" 
         />

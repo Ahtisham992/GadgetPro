@@ -1,12 +1,15 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, SafeAreaView } from 'react-native';
 import useCartStore from '../store/cartStore';
+import useUserStore from '../store/userStore';
 import { theme } from '../theme/colors';
+import { resolveImageUrl } from '../config';
 import { Trash2, ArrowRight } from 'lucide-react-native';
 
 const CartScreen = ({ navigation }) => {
   const cartItems = useCartStore((state) => state.cartItems);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
+  const userInfo = useUserStore((state) => state.userInfo);
 
   const totalAmount = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
 
@@ -15,7 +18,7 @@ const CartScreen = ({ navigation }) => {
       <View style={styles.center}>
         <View style={styles.emptyIconWrap}><Text style={{fontSize: 32}}>🛒</Text></View>
         <Text style={styles.emptyTitle}>Your cart is empty</Text>
-        <Text style={styles.emptyText}>Looks like you haven't added anything yet.</Text>
+        <Text style={styles.emptySubtitle}>Looks like you haven't added anything yet.</Text>
         <TouchableOpacity style={styles.shopButton} onPress={() => navigation.navigate('Home')}>
           <Text style={styles.shopButtonText}>Start Shopping</Text>
         </TouchableOpacity>
@@ -36,7 +39,7 @@ const CartScreen = ({ navigation }) => {
         contentContainerStyle={{ padding: 16 }}
         renderItem={({ item }) => (
           <View style={styles.cartItem}>
-             <Image source={{ uri: item.image.startsWith('http') ? item.image : `http://10.0.2.2:5000${item.image}` }} style={styles.image} />
+             <Image source={{ uri: resolveImageUrl(item.image) }} style={styles.image} />
              <View style={styles.details}>
                 <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
                 <Text style={styles.price}>PKR {item.price.toLocaleString()}</Text>
@@ -62,7 +65,10 @@ const CartScreen = ({ navigation }) => {
            <Text style={styles.totalLabel}>Grand Total</Text>
            <Text style={styles.totalValue}>PKR {totalAmount.toLocaleString()}</Text>
          </View>
-         <TouchableOpacity style={styles.checkoutBtn}>
+         <TouchableOpacity 
+           style={styles.checkoutBtn}
+           onPress={() => userInfo ? navigation.navigate('Checkout') : navigation.navigate('Login')}
+         >
            <Text style={styles.checkoutBtnText}>Proceed to Checkout</Text>
            <ArrowRight size={18} color="#fff" />
          </TouchableOpacity>
@@ -76,7 +82,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.surface, alignItems:'center', justifyContent:'center', marginBottom: 24, ...theme.shadows.card },
   emptyTitle: { fontSize: 20, fontWeight: '800', color: theme.colors.text, marginBottom: 8 },
-  emptyText: { fontSize: 14, color: theme.colors.textMuted, marginBottom: 32 },
+  emptySubtitle: { fontSize: 14, color: theme.colors.textMuted, marginBottom: 32, textAlign: 'center' },
   shopButton: { backgroundColor: theme.colors.text, paddingVertical: 14, paddingHorizontal: 32, borderRadius: theme.radius.lg },
   shopButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   

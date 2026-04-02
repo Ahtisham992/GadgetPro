@@ -154,6 +154,15 @@ const addAddress = asyncHandler(async (req, res) => {
   res.status(201).json(updatedUser.addresses);
 });
 
+// @desc    Get all addresses for user
+// @route   GET /api/users/addresses
+// @access  Private
+const getAddresses = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) { res.status(404); throw new Error('User not found'); }
+  res.json(user.addresses || []);
+});
+
 // @desc    Delete an address from user profile
 // @route   DELETE /api/users/addresses/:addrId
 // @access  Private
@@ -180,6 +189,23 @@ const getUserProfile = asyncHandler(async (req, res) => {
     email: user.email,
     isAdmin: user.isAdmin,
     addresses: user.addresses,
+  });
+});
+
+// @desc    Update user profile (name)
+// @route   PUT /api/users/profile
+// @access  Private
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) { res.status(404); throw new Error('User not found'); }
+  if (req.body.name) user.name = req.body.name;
+  const updatedUser = await user.save();
+  res.json({
+    _id: updatedUser._id,
+    name: updatedUser.name,
+    email: updatedUser.email,
+    isAdmin: updatedUser.isAdmin,
+    token: req.body.name ? generateToken(updatedUser._id) : undefined,
   });
 });
 
@@ -244,6 +270,6 @@ const resetPassword = asyncHandler(async (req, res) => {
 
 export { 
   authUser, registerUser, verifyOtp, googleAuth, 
-  addAddress, deleteAddress, getUserProfile,
+  addAddress, deleteAddress, getAddresses, getUserProfile, updateUserProfile,
   changePassword, forgotPassword, resetPassword
 };

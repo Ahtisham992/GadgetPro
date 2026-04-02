@@ -3,9 +3,12 @@ import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, ActivityIn
 import client from '../api/client';
 import useCartStore from '../store/cartStore';
 import { theme } from '../theme/colors';
-import { ShoppingCart, Star, ChevronRight, Minus, Plus } from 'lucide-react-native';
+import { ShoppingCart, Star, ChevronRight, Minus, Plus, ArrowLeft, MessageSquare, ShieldCheck, Box } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { resolveImageUrl } from '../config';
 
 const ProductScreen = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const { id } = route.params;
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,21 +50,23 @@ const ProductScreen = ({ route, navigation }) => {
   const maxQty = Math.min(product.countInStock || 0, 10);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header Breadcrumb */}
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header Bar */}
       <View style={styles.header}>
-         <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.breadcrumbText}>Home</Text>
+         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <ArrowLeft size={24} color={theme.colors.text} />
          </TouchableOpacity>
-         <ChevronRight size={14} color={theme.colors.textMuted} />
-         <Text style={styles.breadcrumbText}>{product.category}</Text>
+         <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle} numberOfLines={1}>{product.name}</Text>
+            <Text style={styles.headerSub}>{product.category}</Text>
+         </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
          {/* Image Gallery Mock */}
          <View style={styles.imageBlock}>
              <Image 
-                source={{ uri: product.image.startsWith('http') ? product.image : `http://10.0.2.2:5000${product.image}` }} 
+                source={{ uri: resolveImageUrl(product.image) }} 
                 style={styles.image} 
                 resizeMode="contain" 
              />
@@ -126,17 +131,45 @@ const ProductScreen = ({ route, navigation }) => {
                   <Text style={styles.descText}>{product.description}</Text>
                )}
                {activeTab === 'specs' && (
-                  <Text style={styles.descText}>Detailed tech specifications are not mapped yet.</Text>
+                  <View>
+                     <View style={styles.specRow}><Text style={styles.specLabel}>Brand</Text><Text style={styles.specValue}>{product.brand}</Text></View>
+                     <View style={styles.specRow}><Text style={styles.specLabel}>Category</Text><Text style={styles.specValue}>{product.category}</Text></View>
+                     <View style={styles.specRow}><Text style={styles.specLabel}>Rating</Text><Text style={styles.specValue}>{product.rating} / 5</Text></View>
+                     <View style={styles.specRow}><Text style={styles.specLabel}>Reviews</Text><Text style={styles.specValue}>{product.numReviews}</Text></View>
+                     <View style={styles.specRow}><Text style={styles.specLabel}>Availability</Text><Text style={styles.specValue}>{product.countInStock > 0 ? 'In Stock' : 'Out of Stock'}</Text></View>
+                  </View>
                )}
                {activeTab === 'reviews' && (
-                  <Text style={styles.descText}>No reviews available right now.</Text>
+                  <View>
+                     {product.reviews && product.reviews.length > 0 ? (
+                        product.reviews.map((review, idx) => (
+                           <View key={idx} style={styles.reviewItem}>
+                              <View style={styles.reviewHeader}>
+                                 <Text style={styles.reviewUser}>{review.name}</Text>
+                                 <View style={styles.reviewStars}>
+                                    {[...Array(5)].map((_, i) => (
+                                       <Star key={i} size={12} fill={i < review.rating ? theme.colors.warning : 'transparent'} color={theme.colors.warning} />
+                                    ))}
+                                 </View>
+                              </View>
+                              <Text style={styles.reviewComment}>{review.comment}</Text>
+                              <Text style={styles.reviewDate}>{new Date(review.createdAt).toLocaleDateString()}</Text>
+                           </View>
+                        ))
+                     ) : (
+                        <View style={styles.emptyReviews}>
+                           <MessageSquare size={32} color={theme.colors.textLight} />
+                           <Text style={styles.descText}>No reviews for this product yet.</Text>
+                        </View>
+                     )}
+                  </View>
                )}
             </View>
          </View>
       </ScrollView>
 
       {/* Footer Add to Cart */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
          <TouchableOpacity 
             style={[styles.btnPrimary, isOutOfStock && styles.btnDisabled]} 
             onPress={handleAddToCart}
@@ -146,15 +179,18 @@ const ProductScreen = ({ route, navigation }) => {
              <Text style={styles.btnPrimaryText}>Add to Cart</Text>
          </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   container: { flex: 1, backgroundColor: theme.colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: theme.colors.surface, gap: 6, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-  breadcrumbText: { fontSize: 13, color: theme.colors.textMuted, fontWeight: '500' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  backBtn: { padding: 4, marginRight: 12 },
+  headerInfo: { flex: 1 },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.text },
+  headerSub: { fontSize: 12, color: theme.colors.textMuted },
   
   imageBlock: { backgroundColor: theme.colors.bgAlt, padding: 32, aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
@@ -191,6 +227,18 @@ const styles = StyleSheet.create({
   tabTextActive: { color: theme.colors.primary },
   tabContent: { padding: 20 },
   descText: { fontSize: 14, lineHeight: 24, color: theme.colors.textMuted },
+  
+  specRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.bgAlt },
+  specLabel: { fontSize: 14, color: theme.colors.textMuted, fontWeight: '500' },
+  specValue: { fontSize: 14, color: theme.colors.text, fontWeight: '700' },
+
+  reviewItem: { marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.bgAlt },
+  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  reviewUser: { fontSize: 15, fontWeight: '700', color: theme.colors.text },
+  reviewStars: { flexDirection: 'row', gap: 2 },
+  reviewComment: { fontSize: 14, color: theme.colors.textMuted, lineHeight: 22, marginBottom: 8 },
+  reviewDate: { fontSize: 12, color: theme.colors.textLight },
+  emptyReviews: { alignItems: 'center', gap: 12, paddingVertical: 20 },
   
   footer: { padding: 16, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderTopColor: theme.colors.border },
   btnPrimary: { flexDirection: 'row', backgroundColor: theme.colors.primary, paddingVertical: 16, borderRadius: theme.radius.lg, alignItems: 'center', justifyContent: 'center' },
