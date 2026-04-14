@@ -129,7 +129,7 @@ const Home = () => {
 
                 {/* ── Android App Download ── */}
                 <a
-                  href="https://github.com/Ahtisham992/GadgetPro/releases/download/v1.0.0/app-release.apk"
+                  href="https://github.com/Ahtisham992/GadgetPro/releases/download/v2.0.0/app-release.apk"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{

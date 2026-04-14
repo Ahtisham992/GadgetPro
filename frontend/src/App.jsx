@@ -26,6 +26,7 @@ import CouponList from './pages/admin/CouponList';
 import ReturnList from './pages/admin/ReturnList';
 import ReviewManager from './pages/admin/ReviewManager';
 import TrendingPage from './pages/admin/TrendingPage';
+import AdminForecast from './pages/admin/AdminForecast';
 import { usePushNotifications } from './hooks/usePushNotifications';
 
 function App() {
@@ -60,6 +61,7 @@ function App() {
           <Route path="coupons" element={<CouponList />} />
           <Route path="returns" element={<ReturnList />} />
           <Route path="reviews" element={<ReviewManager />} />
+          <Route path="forecast" element={<AdminForecast />} />
           <Route path="trending" element={<TrendingPage />} />
         </Route>
 

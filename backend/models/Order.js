@@ -44,6 +44,7 @@ const orderSchema = mongoose.Schema({
   paidAt: { type: Date },
   isDelivered: { type: Boolean, required: true, default: false },
   deliveredAt: { type: Date },
+  riskScore: { type: Number, default: 0.0 }, // 0.0 to 1.0 (higher = higher fraud risk)
 }, { timestamps: true });
 
 const Order = mongoose.model('Order', orderSchema);

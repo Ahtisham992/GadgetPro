@@ -77,6 +77,50 @@ const ReviewManager = () => {
         </div>
       </div>
 
+      {/* Sentiment Summary Bar */}
+      {products.length > 0 && (
+        <div style={{ background: 'var(--color-bg)', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', marginBottom: '2rem', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <TrendingUp size={16} color="var(--color-primary)" />
+              Customer Sentiment Overview
+            </span>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+              {Math.round((products.reduce((acc, p) => acc + p.reviews.filter(r => r.sentimentLabel === 'POSITIVE').length, 0) / totalReviews) * 100)}% Positive 
+            </span>
+          </div>
+          <div style={{ height: '10px', background: 'var(--color-bg-alt)', borderRadius: '5px', overflow: 'hidden', display: 'flex' }}>
+            <div 
+              style={{ 
+                height: '100%', 
+                width: `${(products.reduce((acc, p) => acc + p.reviews.filter(r => r.sentimentLabel === 'POSITIVE').length, 0) / totalReviews) * 100}%`, 
+                background: 'var(--color-success)',
+                transition: 'width 0.5s ease-out'
+              }} 
+            />
+            <div 
+              style={{ 
+                height: '100%', 
+                width: `${(products.reduce((acc, p) => acc + p.reviews.filter(r => r.sentimentLabel === 'NEGATIVE').length, 0) / totalReviews) * 100}%`, 
+                background: 'var(--color-danger)',
+                transition: 'width 0.5s ease-out'
+              }} 
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }} /> Positive
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-danger)' }} /> Negative
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }} /> Neutral
+            </div>
+          </div>
+        </div>
+      )}
+
       {products.length === 0 ? (
         <div className="card" style={{ padding: '4rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
           <MessageCircle size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
@@ -113,8 +157,24 @@ const ReviewManager = () => {
                               <Star size={12} fill={starColor(review.rating)} color={starColor(review.rating)} /> {review.rating}/5
                             </span>
                           </div>
-                          <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                          <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                            {review.sentimentLabel && (
+                              <span style={{ 
+                                padding: '2px 8px', 
+                                borderRadius: '6px', 
+                                fontSize: '0.7rem', 
+                                fontWeight: 700, 
+                                background: review.sentimentLabel === 'POSITIVE' ? 'var(--color-success-bg)' : review.sentimentLabel === 'NEGATIVE' ? 'var(--color-danger-bg)' : 'var(--color-bg-alt)',
+                                color: review.sentimentLabel === 'POSITIVE' ? 'var(--color-success)' : review.sentimentLabel === 'NEGATIVE' ? 'var(--color-danger)' : 'var(--color-text-muted)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                {review.sentimentLabel === 'POSITIVE' ? '😊 ' : review.sentimentLabel === 'NEGATIVE' ? '😠 ' : '😐 '}
+                                {Math.round(review.sentimentScore * 100)}% {review.sentimentLabel}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <button

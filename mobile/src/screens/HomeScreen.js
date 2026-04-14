@@ -42,7 +42,7 @@ const HomeScreen = ({ navigation, route }) => {
 
   const fetchProducts = async (pageNum = 1, shouldAppend = false) => {
     try {
-      let queryUrl = `/products?pageNumber=${pageNum}`;
+      let queryUrl = `/products?page=${pageNum}`;
       if (activeCategory !== 'All') queryUrl += `&category=${encodeURIComponent(activeCategory)}`;
       if (keyword) queryUrl += `&keyword=${encodeURIComponent(keyword)}`;
       if (minPrice) queryUrl += `&minPrice=${minPrice}`;

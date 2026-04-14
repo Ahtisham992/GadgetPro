@@ -64,7 +64,7 @@ const getProducts = asyncHandler(async (req, res) => {
           }
         },
         // You can sort by semantic score or stock status
-        { $sort: { isStocked: -1, score: -1, createdAt: -1 } }
+        { $sort: { isStocked: -1, score: -1, createdAt: -1, _id: -1 } }
       ];
 
       const allMatchingProducts = await Product.aggregate(pipeline);
@@ -92,7 +92,7 @@ const getProducts = asyncHandler(async (req, res) => {
             isStocked: { $cond: { if: { $gt: ["$countInStock", 0] }, then: 1, else: 0 } }
           }
         },
-        { $sort: { isStocked: -1, createdAt: -1 } },
+        { $sort: { isStocked: -1, createdAt: -1, _id: -1 } },
         { $skip: pageSize * (page - 1) },
         { $limit: pageSize }
       ]);
@@ -114,7 +114,7 @@ const getProducts = asyncHandler(async (req, res) => {
             isStocked: { $cond: { if: { $gt: ["$countInStock", 0] }, then: 1, else: 0 } }
           }
         },
-        { $sort: { isStocked: -1, createdAt: -1 } },
+        { $sort: { isStocked: -1, createdAt: -1, _id: -1 } },
         { $skip: pageSize * (page - 1) },
         { $limit: pageSize }
       ]);
@@ -129,7 +129,7 @@ const getProducts = asyncHandler(async (req, res) => {
           isStocked: { $cond: { if: { $gt: ["$countInStock", 0] }, then: 1, else: 0 } }
         }
       },
-      { $sort: { isStocked: -1, createdAt: -1 } },
+      { $sort: { isStocked: -1, createdAt: -1, _id: -1 } },
       { $skip: pageSize * (page - 1) },
       { $limit: pageSize }
     ]);
@@ -273,6 +273,27 @@ const createProductReview = asyncHandler(async (req, res) => {
     throw new Error('You can only review products from delivered orders.');
   }
 
+  // ─── AI Sentiment Analysis ──────────────────────────────────
+  let sentimentScore = 0.5;
+  let sentimentLabel = 'NEUTRAL';
+  
+  try {
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
+    const aiResponse = await fetch(`${aiServiceUrl}/analyze/sentiment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: comment })
+    });
+    
+    if (aiResponse.ok) {
+      const aiData = await aiResponse.json();
+      sentimentScore = aiData.score;
+      sentimentLabel = aiData.label;
+    }
+  } catch (error) {
+    console.error('Sentiment Analysis Service unreachable:', error.message);
+  }
+
   const review = {
     name: req.user.name,
     rating: Number(rating),
@@ -280,6 +301,8 @@ const createProductReview = asyncHandler(async (req, res) => {
     image: req.body.image,
     user: req.user._id,
     orderId,
+    sentimentScore,
+    sentimentLabel,
   };
 
   product.reviews.push(review);
@@ -449,6 +472,27 @@ const getRecommendations = asyncHandler(async (req, res) => {
   res.json({ frequentlyBought, youMightLike });
 });
 
+// @desc    Get demand forecast for the shop
+// @route   GET /api/products/admin/forecast
+// @access  Private/Admin
+const getForecast = asyncHandler(async (req, res) => {
+  try {
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
+    const response = await fetch(`${aiServiceUrl}/forecast/demand?days=30`);
+    if (response.ok) {
+      const data = await response.json();
+      res.json(data);
+    } else {
+      res.status(500);
+      throw new Error('AI Forecasting Service failed.');
+    }
+  } catch (error) {
+    console.error('AI Forecasting Service error:', error.message);
+    res.status(500);
+    throw new Error('AI Forecasting Service unreachable: ' + error.message);
+  }
+});
+
 export { 
   getProducts, 
   getProductById, 
@@ -460,5 +504,6 @@ export {
   deleteReview, 
   getTrendingStats, 
   subscribeToProduct,
-  getRecommendations
+  getRecommendations,
+  getForecast
 };

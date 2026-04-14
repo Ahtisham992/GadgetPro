@@ -116,6 +116,7 @@ const OrderList = () => {
               <th style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>DATE</th>
               <th style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>TOTAL</th>
               <th style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>STATUS</th>
+              <th style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>RISK</th>
               <th style={{ padding: '0.875rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>ACTIONS</th>
             </tr>
           </thead>
@@ -137,6 +138,17 @@ const OrderList = () => {
                     <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.625rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, background: bg, color }}>
                       {label}
                     </span>
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    {order.riskScore > 0.7 ? (
+                      <span title={`High Fraud Risk: ${Math.round(order.riskScore * 100)}%`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--color-danger)', fontWeight: 700, fontSize: '0.75rem', background: 'var(--color-danger-bg)', padding: '0.2rem 0.5rem', borderRadius: '8px' }}>
+                        🚩 FLAG
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                        {order.riskScore > 0.3 ? 'Moderate' : 'Low'}
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <button

@@ -9,6 +9,8 @@ const reviewSchema = mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Order' },
   adminReply: { type: String, default: '' },
   adminReplyAt: { type: Date },
+  sentimentScore: { type: Number, default: 0.5 },
+  sentimentLabel: { type: String, enum: ['POSITIVE', 'NEGATIVE', 'NEUTRAL'], default: 'NEUTRAL' },
 }, { timestamps: true });
 
 const productSchema = mongoose.Schema({

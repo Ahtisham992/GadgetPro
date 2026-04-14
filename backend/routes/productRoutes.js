@@ -3,11 +3,12 @@ const router = express.Router();
 import {
   getProducts, getProductById, deleteProduct, createProduct, updateProduct,
   createProductReview, replyToReview, deleteReview, getTrendingStats,
-  subscribeToProduct, getRecommendations
+  subscribeToProduct, getRecommendations, getForecast
 } from '../controllers/productController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 router.get('/trending', protect, admin, getTrendingStats);
+router.get('/forecast', protect, admin, getForecast);
 
 router.route('/')
   .get(getProducts)

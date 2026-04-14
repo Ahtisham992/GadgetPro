@@ -22,7 +22,8 @@ const AdminLayout = () => {
     { to: '/admin/coupons', label: 'Coupons', icon: <Globe size={18} /> },
     { to: '/admin/returns', label: 'Returns', icon: <RefreshCw size={18} /> },
     { to: '/admin/reviews', label: 'Reviews', icon: <MessageCircle size={18} /> },
-    { to: '/admin/trending', label: 'Trending', icon: <TrendingUp size={18} /> },
+    { to: '/admin/forecast', label: 'Forecast', icon: <TrendingUp size={18} /> },
+    { to: '/admin/trending', label: 'Trending', icon: <RefreshCw size={18} /> },
   ];
 
   const isActive = (item) => item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to);

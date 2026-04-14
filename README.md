@@ -12,6 +12,12 @@ GadgetPro is a next-generation, AI-powered full-stack MERN (MongoDB, Express, Re
 * **Smart Semantic Search (NLP)**: Unlike traditional keyword matching, GadgetPro uses mathematical vector embeddings (generated locally via `@xenova/transformers`) and MongoDB Atlas Vector Search. Users can search for abstract concepts like "high performance gaming machine" and the system will intelligently surface relevant gaming laptops and monitors.
 * **Intelligent Chat Assistant**: A globally persistent, glassmorphism chat widget powered by the **xAI Grok API**. Utilizing Retrieval-Augmented Generation (RAG), the chatbot is constantly aware of the store's current live inventory and the user's active shopping cart, allowing it to provide highly contextual product recommendations and support.
 * **Personalized Recommendations Engine**: A dedicated **Python FastAPI Microservice** analyzes user purchase histories to build a User-Item interaction matrix. Using Collaborative Filtering (`scikit-learn`), it dynamically populates the "Frequently Bought Together" and "You Might Also Like" sections with hyper-personalized suggestions.
+* **Sentiment Analysis**: Processes customer reviews using `distilbert` to determine sentiment, rendering helpful badges and an overall sentiment summary in the Admin Review Manager.
+* **Demand Forecasting**: Analyzes past order data using Meta's **Prophet** algorithm to provide a 30-day projected sales forecast in the Admin Dashboard.
+* **Fraud Detection Anomaly Engine**: Evaluates individual orders using an Isolation Forest model to flag high-risk anomalies automatically in the order queue.
+
+### 📱 Mobile Experience
+* **React Native App**: In addition to the responsive web app, GadgetPro includes a fully-functional ecosystem via a companion React Native application, empowering customers to seamlessly browse, order, and track gadgets on the go.
 
 ### 🛒 For Customers
 * **Modern & Responsive UI**: Cinematic hero sections, beautiful CSS Grid layouts, and seamless mobile-to-desktop transitions built entirely with custom CSS modules.
@@ -33,6 +39,9 @@ GadgetPro is a next-generation, AI-powered full-stack MERN (MongoDB, Express, Re
 ### Web Application (MERN)
 * **Frontend**: React (Vite), React Router DOM, Zustand (State Management), Lucide-React (Icons), Chart.js
 * **Backend**: Node.js, Express.js, MongoDB (Mongoose), JSON Web Tokens (JWT), Nodemailer
+
+### Mobile Application
+* **Framework**: React Native, React Navigation
 
 ### Artificial Intelligence Infrastructure
 * **Vector Embeddings**: `@xenova/transformers` (Local Node.js execution via `Xenova/all-MiniLM-L6-v2`)
@@ -153,7 +162,9 @@ Nextgen/
 │   │   ├── store/            # Zustand global state (Cart, User, Wishlist)
 │   │   ├── App.jsx           # Routing definition
 │   │   └── index.css         # Global styling & CSS variables
-├── ai_service/           # Python FastAPI Recommendation Engine
+├── mobile/                   # React Native mobile client
+│   └── src/                  # Screens, components, and navigation
+├── ai_service/               # Python FastAPI Recommendation Engine
 │   ├── main.py
 │   ├── requirements.txt
 │   └── setup.bat
